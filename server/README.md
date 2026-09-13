@@ -218,6 +218,44 @@ Successful registration returns HTTP 201:
 `UserResponse` selects only these public fields. `RegistrationResponse` documents
 the envelope in OpenAPI. Invalid or missing fields return HTTP 422 with
 `VALIDATION_ERROR`; duplicate normalized emails return HTTP 409 with
-`EMAIL_ALREADY_REGISTERED`. No tokens are returned. Login and JWT handling belong
-to Task 2.4. Tests exercise this HTTP flow against isolated test-database schemas;
+`EMAIL_ALREADY_REGISTERED`. Registration does not return tokens. Tests exercise this HTTP flow against isolated test-database schemas;
 they do not register users in the application database.
+
+## JWT login
+
+`POST /api/v1/auth/login` accepts JSON `email` and `password`. `LoginRequest`
+uses registration's email normalization but preserves the password exactly and
+does not enforce registration strength rules. Missing/malformed fields return
+422. Unknown email and incorrect password both return 401 `INVALID_CREDENTIALS`
+with the same message and `WWW-Authenticate: Bearer`. Unknown emails still incur
+an Argon2 verification against a process-local dummy hash; this avoids skipping
+the expensive verification step, without claiming perfectly identical timings.
+
+Success returns HTTP 200 with `data.access_token`, `data.refresh_token`, and
+`data.token_type` set to `bearer`. Cache headers prevent caching the token response.
+The synchronous route calls `authenticate_user()`, then `issue_token_pair()`.
+Login does not modify the user or issue tokens on a failed password check.
+
+Configure the following in the process environment or the ignored `.env`:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| JWT_SECRET_KEY | Required; no fallback | Random private signing key of at least 32 bytes |
+| JWT_ACCESS_TOKEN_MINUTES | 15 | Positive integer access-token lifetime |
+| JWT_REFRESH_TOKEN_DAYS | 7 | Positive integer refresh-token lifetime; must outlive access |
+
+Use Python's `secrets.token_urlsafe(48)` to generate a signing key. Keep it stable
+across workers/restarts and private; changing it invalidates tokens signed with
+the old key once token verification is implemented. The example environment file
+intentionally leaves the key blank. `TokenSettings` excludes the key from repr;
+invalid configuration produces a generic 500 response and no tokens. Configuration
+is loaded by the login dependency, so health/registration can run without a JWT key.
+
+`accounts/tokens.py` uses [PyJWT](https://pyjwt.readthedocs.io/en/stable/usage.html)
+with fixed HS256 signing. Claims are `sub` (user UUID), `type` (`access` or
+`refresh`), `iat`, `exp`, `jti` (unique per token), `iss` (`plug-and-send-billing`),
+and `aud` (`billing-api`). No passwords, hashes, email addresses, or caller-supplied
+claims enter tokens. JWTs are signed, not encrypted; their claims are readable.
+The refresh endpoint (Task 2.5) and current-user/protected-route verification
+(Task 2.6) must enforce the appropriate token type as well as signature, expiry,
+issuer, and audience. Those endpoints are not implemented in Task 2.4.

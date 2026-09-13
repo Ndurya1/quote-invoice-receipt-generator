@@ -2,8 +2,30 @@
 
 from psycopg import Connection
 from psycopg.rows import class_row
+from uuid import UUID
 
 from app.accounts.models import User
+
+
+def get_user_by_id(connection: Connection, user_id: UUID) -> User | None:
+    with connection.cursor(row_factory=class_row(User)) as cursor:
+        cursor.execute(
+            "SELECT id, name, email, phone, password_hash, created_at, updated_at "
+            "FROM users WHERE id = %s",
+            (user_id,),
+        )
+        return cursor.fetchone()
+
+
+def get_user_by_email(connection: Connection, email: str) -> User | None:
+    """Look up the normalized email supplied by the account request schema."""
+    with connection.cursor(row_factory=class_row(User)) as cursor:
+        cursor.execute(
+            "SELECT id, name, email, phone, password_hash, created_at, updated_at "
+            "FROM users WHERE email = %s",
+            (email,),
+        )
+        return cursor.fetchone()
 
 
 def insert_user(

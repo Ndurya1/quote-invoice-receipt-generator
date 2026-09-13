@@ -1,7 +1,13 @@
 import re
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+
+def normalize_email(value):
+    return value.strip().lower() if isinstance(value, str) else value
+
 
 class UserCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
@@ -17,9 +23,7 @@ class UserCreate(BaseModel):
     @field_validator('email', mode='before')
     @classmethod
     def validate_email_structure(cls, v:str)->str:
-        if isinstance (v, str):
-            return v.strip().lower()
-        return v
+        return normalize_email(v)
     
     @field_validator('phone', mode='before')
     @classmethod
@@ -60,4 +64,37 @@ class RegistrationResponse(BaseModel):
     """Public registration envelope, also used to document the endpoint."""
 
     data: UserResponse
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr = Field(max_length=255)
+    password: str = Field(exclude=True, repr=False)
+
+    @field_validator('email', mode='before')
+    @classmethod
+    def normalize_login_email(cls, value):
+        return normalize_email(value)
+
+
+class TokenPair(BaseModel):
+    access_token: str = Field(repr=False)
+    refresh_token: str = Field(repr=False)
+    token_type: Literal['bearer'] = 'bearer'
+
+
+class LoginResponse(BaseModel):
+    data: TokenPair
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str = Field(min_length=1, exclude=True, repr=False)
+
+
+class AccessToken(BaseModel):
+    access_token: str = Field(repr=False)
+    token_type: Literal['bearer'] = 'bearer'
+
+
+class RefreshResponse(BaseModel):
+    data: AccessToken
 

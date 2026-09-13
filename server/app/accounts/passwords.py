@@ -1,8 +1,12 @@
 """Password hashing delegated to pwdlib's recommended Argon2 hasher."""
 
+from secrets import token_urlsafe
+
 from pwdlib import PasswordHash
 
 _password_hasher = PasswordHash.recommended()
+# One process-local dummy hash ensures unknown users still incur verification work.
+DUMMY_PASSWORD_HASH = _password_hasher.hash(token_urlsafe(32))
 
 
 def hash_password(password: str) -> str:
