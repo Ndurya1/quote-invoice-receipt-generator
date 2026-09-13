@@ -3,9 +3,11 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+from app.accounts.router import router as accounts_router
 from app.common.responses import resource_response
 
 router = APIRouter(prefix="/api/v1")
+router.include_router(accounts_router)
 
 
 @router.get("", tags=["system"])

@@ -163,7 +163,7 @@ response has begun, its status/body cannot be replaced with a JSON error.
 model. It contains the documented UUID, name, email, nullable phone, password hash,
 and timestamps. `password_hash` is excluded from standard model serialization and
 representations, while remaining available internally for password verification.
-This is a database-row model; registration request validation is Task 2.2.
+This is a database-row model; registration requests use `accounts.schemas.UserCreate`.
 
 `app.accounts.service.create_user(connection, name=..., email=..., password=...,
 phone=...)` hashes the password before opening a transaction, then calls
@@ -178,9 +178,46 @@ The library manages salts and encoded hash parameters. Plaintext passwords are
 not persisted. These synchronous functions should run in synchronous routes or a
 worker thread when called from future asynchronous endpoints.
 
-PostgreSQL enforces unique email values. At this layer duplicates raise
-`psycopg.errors.UniqueViolation`; mapping registration conflicts to public domain
-errors belongs to the registration task. Email normalization and password policy
-are not implemented yet. The service respects enclosing transactions, so a caller
-can roll back user creation along with another operation. No registration or login
-routes have been added.
+PostgreSQL enforces unique email values. The service maps the `users_email_key`
+constraint failure to `EMAIL_ALREADY_REGISTERED` (409), after transaction rollback.
+Other database failures are not misclassified as duplicate emails. The service
+respects enclosing transactions, so a caller can roll back user creation along
+with another operation.
+
+## Registration endpoint
+
+`POST /api/v1/auth/register` accepts an unauthenticated JSON request:
+
+```json
+{
+  "name": "Owner",
+  "email": "owner@example.com",
+  "password": "Example123",
+  "phone": "0712345678"
+}
+```
+
+`UserCreate` trims names, lowercases and trims email, and checks required fields
+and password strength. Phone is optional and accepts digits with an optional
+leading `+`. Passwords retain their exact characters; they are passed explicitly
+to the service because schema serialization excludes them. Extra fields cannot
+override the generated UUID, timestamps, or password hash.
+
+The accounts router is mounted by `api/v1.py`. The synchronous route uses
+`common.dependencies.get_database_connection`, which opens and closes a connection
+per request. It reads process environment settings and uses `TEST_DATABASE_URL`
+when the app environment is `test`, without falling back to the application DB.
+Start the server with the documented `--env-file .env` option to load credentials.
+
+Successful registration returns HTTP 201:
+
+```json
+{"data": {"id": "<generated UUID>", "name": "Owner", "email": "owner@example.com", "phone": "0712345678"}}
+```
+
+`UserResponse` selects only these public fields. `RegistrationResponse` documents
+the envelope in OpenAPI. Invalid or missing fields return HTTP 422 with
+`VALIDATION_ERROR`; duplicate normalized emails return HTTP 409 with
+`EMAIL_ALREADY_REGISTERED`. No tokens are returned. Login and JWT handling belong
+to Task 2.4. Tests exercise this HTTP flow against isolated test-database schemas;
+they do not register users in the application database.

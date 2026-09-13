@@ -6,12 +6,13 @@ from uuid import UUID, uuid4
 
 from dotenv import load_dotenv
 from fastapi.encoders import jsonable_encoder
-from psycopg import errors, sql
+from psycopg import sql
 
 from app.accounts.models import User
 from app.accounts.passwords import hash_password, verify_password
 from app.accounts.service import create_user
 from app.common.database import DatabaseSettings, connect_database
+from app.common.errors import DomainError
 from app.common.migrations import apply_migrations
 
 
@@ -80,8 +81,10 @@ class UserPersistenceTests(unittest.TestCase):
 
     def test_duplicate_email_is_rejected_and_connection_remains_usable(self):
         original = create_user(self.connection, name="Original", email="same@example.com", password="first-password")
-        with self.assertRaises(errors.UniqueViolation):
+        with self.assertRaises(DomainError) as error:
             create_user(self.connection, name="Duplicate", email="same@example.com", password="second-password")
+        self.assertEqual(error.exception.code, "EMAIL_ALREADY_REGISTERED")
+        self.assertEqual(error.exception.status_code, 409)
         self.assertEqual(self.connection.execute("SELECT count(*) FROM users").fetchone()[0], 1)
         existing_id, existing_hash = self.connection.execute("SELECT id, password_hash FROM users").fetchone()
         self.assertEqual(existing_id, original.id)

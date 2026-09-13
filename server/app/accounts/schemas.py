@@ -55,3 +55,9 @@ class UserResponse(BaseModel):
     email: EmailStr
     phone: str | None = None
 
+
+class RegistrationResponse(BaseModel):
+    """Public registration envelope, also used to document the endpoint."""
+
+    data: UserResponse
+
