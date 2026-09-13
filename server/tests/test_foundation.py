@@ -15,7 +15,7 @@ class ApplicationTests(unittest.TestCase):
             self.assertEqual(health.json(), {"status": "ok"})
             root = client.get("/api/v1")
             self.assertEqual(root.status_code, 200)
-            self.assertEqual(root.json(), {"version": "v1"})
+            self.assertEqual(root.json(), {"data": {"version": "v1"}})
             schema = client.get("/openapi.json")
             self.assertEqual(schema.status_code, 200)
             self.assertIn("/api/v1", schema.json()["paths"])
@@ -24,7 +24,8 @@ class ApplicationTests(unittest.TestCase):
     def test_environment_configures_application(self):
         app = create_app()
         self.assertEqual(app.title, "Test Billing")
-        self.assertTrue(app.debug)
+        self.assertTrue(app.state.settings.debug)
+        self.assertFalse(app.debug)
         self.assertEqual(app.state.settings.environment, "test")
 
     @patch.dict("os.environ", {}, clear=True)
