@@ -1,4 +1,4 @@
-"""Environment-driven application settings; database settings follow in Task 1.2."""
+"""Environment-driven application settings; database settings live in database.py."""
 
 import os
 from dataclasses import dataclass
