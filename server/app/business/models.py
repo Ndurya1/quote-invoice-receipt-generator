@@ -1,7 +1,8 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
+
 
 class BusinessProfile(BaseModel):
     """An existing business profile row, not a registration request schema."""
@@ -9,10 +10,12 @@ class BusinessProfile(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     id: UUID
+    user_id: UUID
     business_name: str
-    email: str
+    email: str | None
     phone: str | None
-    business_address: str
+    address: str | None
+    tax_number: str | None
     logo_url: str | None
     default_currency: str
     created_at: datetime

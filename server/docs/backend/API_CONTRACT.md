@@ -146,6 +146,31 @@ Because an authenticated user has one business profile:
 - `GET /api/v1/business-profile`
 - `PUT /api/v1/business-profile`
 
+Retrieval requires an access bearer token and resolves ownership from the
+authenticated user. Caller-supplied `user_id` is not used for selection.
+Success returns HTTP 200 in the `data` envelope with `id`, `user_id`,
+`business_name`, `logo_url`, `email`, `phone`, `address`, `tax_number`,
+`default_currency`, `created_at`, and `updated_at`. Nullable fields remain null.
+The response includes `Cache-Control: no-store`.
+
+If the authenticated user has no profile, retrieval returns HTTP 404 with
+`BUSINESS_PROFILE_NOT_FOUND`; it does not create one. Missing or invalid
+authentication returns HTTP 401 `AUTHENTICATION_REQUIRED`.
+
+PUT requires the same authentication and performs a full replacement of editable
+fields, creating the profile if absent. Both creation and update return HTTP 200
+with the stored profile in the same `data` envelope and `Cache-Control: no-store`.
+`business_name` is required, trimmed, and must contain 1–160 characters. Omitted
+optional fields become null; omitted `default_currency` becomes `KES`, including
+on updates. Currency must contain exactly three uppercase ASCII letters.
+Email must be valid when supplied; logo URLs must use HTTP or HTTPS. Phone and
+tax number have maximum lengths of 30 and 100 characters respectively.
+Explicit null is allowed for optional fields but not business name or currency.
+Unknown fields, including `id`, `user_id`, `created_at`, and `updated_at`, are
+rejected with HTTP 422 `VALIDATION_ERROR`, as are invalid editable values.
+Ownership is assigned from authentication. Updates preserve the profile ID,
+owner, and creation timestamp; `updated_at` is maintained by the database.
+
 Example update:
 
 ```json
