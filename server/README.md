@@ -468,6 +468,24 @@ calculated in this task.
 Run `python -m unittest tests.test_line_items -v` to verify required fields,
 numeric boundaries, precision, non-finite values, JSON input, and position rules.
 
+## Line-total calculation
+
+Task 5.3 adds `calculate_line_total(item)` in `app/common/calculations.py`.
+Pass a validated `LineItemInput`; the function multiplies its Decimal quantity
+and unit price and returns a Decimal with two fractional digits. It never accepts
+a caller-supplied total or modifies the input. Validate requests before calling
+it; do not bypass the input schema using unchecked model construction.
+
+The rounding policy is `ROUND_HALF_UP`, applied once after multiplication to
+match the monetary scale: `1.005` becomes `1.01`. A result exceeding
+`999999999999.99` after rounding raises `LINE_TOTAL_OUT_OF_RANGE` (422). Tiny
+positive products may round to `0.00`; a zero unit price is valid. An explicit
+local Decimal context prevents caller precision, rounding, or trap settings
+from changing the result. Subtotals, tax, and discounts are later tasks.
+
+Run `python -m unittest tests.test_line_total tests.test_line_items -v` for exact
+arithmetic, rounding, zero-price, range, and context-isolation checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
