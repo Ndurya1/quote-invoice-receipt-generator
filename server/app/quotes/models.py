@@ -41,3 +41,17 @@ class Quote(BaseModel):
     terms: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class QuoteItem(BaseModel):
+    """Persisted line item; calculation and request validation happen before storage."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: UUID
+    quote_id: UUID
+    description: str
+    quantity: Decimal
+    unit_price: Decimal
+    line_total: Decimal
+    position: int

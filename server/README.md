@@ -648,6 +648,21 @@ does not authorize client ownership, compute totals, or enforce status transitio
 those rules belong to later request/service tasks. QuoteItem is task 7.2.
 Run `python -m unittest tests.test_quotes -v` for PostgreSQL mapping and constraints.
 
+## Quote item model
+
+Task 7.2 adds immutable `QuoteItem` rows in `app/quotes/models.py`, containing
+UUID, quote UUID, description, Decimal quantity/unit price/line total, and position.
+The existing table enforces positive quantity, nonnegative prices/totals, required
+fields, and a valid parent. Quantity uses NUMERIC(12,3); price and total use
+NUMERIC(14,2). Position defaults to zero. The parent index and ON DELETE CASCADE
+already exist, so no migration is needed.
+
+Deleting a quote removes its own items, leaving other quotes and items intact.
+The model does not authorize parent deletion or calculate amounts. Later creation
+services must use shared input validation and authoritative totals before storage.
+Run `python -m unittest tests.test_quote_items tests.test_quotes -v` for row mapping,
+database constraints, precision, scoped cascade behavior, and rollback checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
