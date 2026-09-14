@@ -9,12 +9,25 @@ from psycopg import Connection
 from app.accounts.dependencies import get_current_user
 from app.accounts.models import User
 from app.business.queries import get_profile_for_user
-from app.business.schemas import BusinessProfileResponse
+from app.business.schemas import BusinessProfilePut, BusinessProfileResponse
+from app.business.service import upsert_profile
 from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import resource_response
 
 router = APIRouter(prefix='/business-profile', tags=['business'])
+
+
+@router.put('', response_model=BusinessProfileResponse)
+def replace_profile(
+    payload: BusinessProfilePut,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    profile = upsert_profile(connection, user_id=user.id, payload=payload)
+    response = resource_response(profile)
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @router.get('', response_model=BusinessProfileResponse)

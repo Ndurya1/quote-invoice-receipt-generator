@@ -84,8 +84,8 @@ class BusinessProfileReadTests(unittest.TestCase):
         self.connection.execute('DELETE FROM users WHERE id = %s', (UUID(self.user_id),))
         self.assertEqual(self.read(token).status_code, 401)
 
-    def test_openapi_declares_authenticated_get_only(self):
+    def test_openapi_declares_authenticated_profile_routes(self):
         path = self.client.get('/openapi.json').json()['paths']['/api/v1/business-profile']
-        self.assertEqual(set(path), {'get'})
+        self.assertEqual(set(path), {'get', 'put'})
         self.assertEqual(path['get']['security'], [{'HTTPBearer': []}])
         self.assertIn('200', path['get']['responses'])

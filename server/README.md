@@ -291,7 +291,7 @@ The existing initial migration supplies the UUID and UTC timestamps, defaults
 currency to `KES`, and enforces one profile per existing user with a unique
 foreign key. Optional contact and tax fields may be null. An explicit currency
 can be stored; the reusable currency validator is described below. Profile
-retrieval is Task 3.3 and updates remain Task 3.4. No additional migration is needed.
+retrieval is Task 3.3 and upsert/update is Task 3.4. No additional migration is needed.
 
 Run `python -m unittest tests.test_business_profile -v` to verify the model against
 PostgreSQL, including defaults, full-field persistence, updated timestamps, and
@@ -314,6 +314,28 @@ creating a row. Invalid authentication returns 401 `AUTHENTICATION_REQUIRED`.
 
 Run `python -m unittest tests.test_business_profile_read -v` for PostgreSQL-backed
 retrieval, authentication, missing-profile, and cross-user isolation tests.
+
+## Business profile upsert/update
+
+Task 3.4 adds `PUT /api/v1/business-profile`, authenticated with an access bearer
+token. Both creation and update return HTTP 200 with the stored profile in `data`.
+PUT replaces all editable fields: `business_name` is required, omitted optional
+fields become null, and omitted currency becomes `KES`. Send every value you want
+to retain. Explicit null is rejected for name and currency.
+
+`BusinessProfilePut` trims and validates the name, validates email and HTTP(S)
+logo URLs, enforces database field lengths, and uses `CurrencyCode`. Unknown and
+server-managed fields are rejected with 422 `VALIDATION_ERROR`. Phone is optional
+text limited to 30 characters; no additional phone-format rule is imposed here.
+
+The route passes the verified user's ID to `upsert_profile()`. Its transaction
+uses `INSERT ... ON CONFLICT (user_id) DO UPDATE`, so concurrent saves use the
+database's one-profile-per-user constraint. Updates preserve ID, owner, and
+creation time. Repeated requests retain the same editable state; the database
+refreshes `updated_at` on each update. No profile selection comes from the body.
+
+Run `python -m unittest tests.test_business_profile_put tests.test_business_profile_read -v`
+for creation, replacement, validation, ownership, authentication, and rollback checks.
 
 ## Currency-code validation
 
