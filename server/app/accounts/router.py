@@ -6,8 +6,10 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from psycopg import Connection
 
+from app.accounts.dependencies import get_current_user
+from app.accounts.models import User
 from app.accounts.schemas import (
-    LoginRequest, LoginResponse, RefreshRequest, RefreshResponse,
+    CurrentUserResponse, LoginRequest, LoginResponse, RefreshRequest, RefreshResponse,
     RegistrationResponse, UserCreate, UserResponse,
 )
 from app.accounts.service import authenticate_user, create_user, refresh_access_token
@@ -16,6 +18,13 @@ from app.common.dependencies import get_database_connection
 from app.common.responses import resource_response
 
 router = APIRouter(prefix="/auth", tags=["accounts"])
+
+
+@router.get("/me", response_model=CurrentUserResponse)
+def current_user(user: Annotated[User, Depends(get_current_user)]) -> JSONResponse:
+    response = resource_response(UserResponse.model_validate(user))
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @router.post("/register", status_code=201, response_model=RegistrationResponse)

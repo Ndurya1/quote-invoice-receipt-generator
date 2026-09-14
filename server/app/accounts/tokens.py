@@ -1,4 +1,4 @@
-"""JWT issuance and strict refresh-token verification."""
+"""JWT issuance and strict token verification."""
 
 import os
 from dataclasses import dataclass, field
@@ -89,6 +89,23 @@ def invalid_refresh_token() -> DomainError:
 
 
 def verify_refresh_token(token: str, settings: TokenSettings) -> UUID:
+    return _verify_token(token, settings, token_type="refresh", error=invalid_refresh_token())
+
+
+def authentication_required() -> DomainError:
+    return DomainError(
+        "AUTHENTICATION_REQUIRED", "Authentication is required.",
+        status_code=401, headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def verify_access_token(token: str, settings: TokenSettings) -> UUID:
+    return _verify_token(token, settings, token_type="access", error=authentication_required())
+
+
+def _verify_token(
+    token: str, settings: TokenSettings, *, token_type: str, error: DomainError,
+) -> UUID:
     """Return the verified subject; never trust a token's algorithm or raw claims."""
     try:
         claims = jwt.decode(
@@ -97,13 +114,15 @@ def verify_refresh_token(token: str, settings: TokenSettings) -> UUID:
             options={"require": ["sub", "type", "iat", "exp", "jti", "iss", "aud"],
                      "strict_aud": True},
         )
-        if claims["type"] != "refresh":
+        if claims["type"] != token_type:
             raise ValueError("Wrong token type")
         if type(claims["iat"]) is not int or type(claims["exp"]) is not int:
             raise ValueError("Token timestamps must be integers")
         if claims["exp"] <= claims["iat"]:
             raise ValueError("Invalid token lifetime")
+        if not isinstance(claims["jti"], str) or not isinstance(claims["sub"], str):
+            raise ValueError("Token identifiers must be strings")
         UUID(claims["jti"])
         return UUID(claims["sub"])
     except (jwt.InvalidTokenError, ValueError, TypeError, OverflowError):
-        raise invalid_refresh_token() from None
+        raise error from None

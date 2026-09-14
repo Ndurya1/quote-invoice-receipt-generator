@@ -256,6 +256,44 @@ with fixed HS256 signing. Claims are `sub` (user UUID), `type` (`access` or
 `refresh`), `iat`, `exp`, `jti` (unique per token), `iss` (`plug-and-send-billing`),
 and `aud` (`billing-api`). No passwords, hashes, email addresses, or caller-supplied
 claims enter tokens. JWTs are signed, not encrypted; their claims are readable.
-The refresh endpoint (Task 2.5) and current-user/protected-route verification
-(Task 2.6) must enforce the appropriate token type as well as signature, expiry,
-issuer, and audience. Those endpoints are not implemented in Task 2.4.
+The refresh endpoint (Task 2.5) verifies the refresh token type, signature, expiry,
+issuer, and audience. The current-user endpoint (Task 2.6) applies the same checks
+while requiring an access token.
+
+## JWT refresh
+
+`POST /api/v1/auth/refresh` accepts `{"refresh_token": "..."}` and returns HTTP
+200 with `{"data": {"access_token": "...", "token_type": "bearer"}}`.
+The response includes `Cache-Control: no-store` and `Pragma: no-cache`.
+
+`RefreshRequest` validates the input and excludes the token from model dumps and
+repr. The route calls `refresh_access_token()`, which verifies the signed claims,
+looks up the user by the verified UUID, and issues a fresh access token. It does
+not rotate or extend the refresh token: that token remains reusable until expiry.
+There is no token revocation store in this task.
+
+Invalid or expired tokens, access tokens submitted as refresh tokens, and tokens
+for deleted users return 401 `INVALID_REFRESH_TOKEN` with the same generic message.
+Missing or malformed request fields return 422 `VALIDATION_ERROR` without echoing
+the input. Verification requires all issued claims and uses a fixed HS256 algorithm.
+
+Run the login and refresh integration tests against the separate PostgreSQL test
+database with `python -m unittest tests.test_login tests.test_refresh -v`.
+
+## Current user
+
+`GET /api/v1/auth/me` requires `Authorization: Bearer <access_token>` and returns
+HTTP 200 with `data` containing only `id`, `name`, `email`, and `phone`. The
+response uses `Cache-Control: no-store`. Passwords, password hashes, and internal
+timestamps are excluded by the public `UserResponse` schema.
+
+`accounts/dependencies.py` provides `get_current_user()` for protected routes.
+It first verifies the bearer access token, then loads the user from PostgreSQL
+using the verified subject UUID. Profile values therefore reflect the current
+database row. Query parameters and headers cannot choose a different user.
+Missing, malformed, expired, or invalid credentials, refresh tokens, and deleted
+users all return 401 `AUTHENTICATION_REQUIRED` with `WWW-Authenticate: Bearer`.
+The OpenAPI schema declares HTTP bearer authentication for this endpoint.
+
+Run the authentication checks with
+`python -m unittest tests.test_current_user tests.test_refresh tests.test_login -v`.
