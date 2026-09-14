@@ -400,6 +400,23 @@ IDs. Success returns HTTP 200 with the stored client in `data` and
 account's client records. Invalid UUIDs return 422; invalid authentication returns
 401. Run `python -m unittest tests.test_client_detail -v` for endpoint checks.
 
+## Client partial updates
+
+Task 4.6 adds authenticated `PATCH /api/v1/clients/{client_id}`. Send only the
+editable fields to change: name, email, phone, or address. Omitted fields stay
+unchanged; null clears a contact field but cannot clear name. Validation reuses
+the creation schema's field rules and rejection of unknown/server-managed fields.
+
+`ClientPatch` tracks supplied fields; `update_client()` uses `exclude_unset=True`
+and a fixed allowlist of column names to construct a parameterized SQL update.
+Both owner and client UUID constrain the update. ID, owner, and creation time
+are preserved; the database maintains `updated_at`. Empty `{}` reads the owned
+client without writing. Missing and foreign clients return 404 `CLIENT_NOT_FOUND`.
+Success returns HTTP 200 with the stored client in `data`.
+
+Run `python -m unittest tests.test_client_patch -v` for partial-update, null,
+validation, ownership, authentication, and rollback checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type

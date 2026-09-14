@@ -250,6 +250,20 @@ cannot change the authenticated ownership scope.
 
 ---
 
+### Update Client
+
+`PATCH /api/v1/clients/{client_id}` requires an access bearer token and returns
+HTTP 200 with the updated client in `data` and `Cache-Control: no-store`.
+Only supplied `name`, `email`, `phone`, and `address` fields are changed.
+Omitted fields are preserved; explicit null clears contact fields but is invalid
+for name. Supplied values follow creation validation, including trimming name.
+Unknown fields and server-managed IDs/ownership/timestamps return 422
+`VALIDATION_ERROR`. An empty object returns the owned client without writing or
+changing its timestamp. Missing and foreign-owned clients both return 404
+`CLIENT_NOT_FOUND`; malformed UUIDs return 422 and invalid authentication 401.
+
+---
+
 ## 5. Quotes
 
 Endpoints:

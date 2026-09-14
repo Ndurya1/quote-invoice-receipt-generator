@@ -10,13 +10,26 @@ from psycopg import Connection
 from app.accounts.dependencies import get_current_user
 from app.accounts.models import User
 from app.clients.queries import get_client_for_user, paginate_clients_for_user
-from app.clients.schemas import ClientCreate, ClientListResponse, ClientResponse
-from app.clients.service import create_client
+from app.clients.schemas import ClientCreate, ClientListResponse, ClientPatch, ClientResponse
+from app.clients.service import create_client, update_client
 from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
 
 router = APIRouter(prefix='/clients', tags=['clients'])
+
+
+@router.patch('/{client_id}', response_model=ClientResponse)
+def patch_client(
+    client_id: UUID,
+    payload: ClientPatch,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    client = update_client(connection, user_id=user.id, client_id=client_id, payload=payload)
+    response = resource_response(client)
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @router.get('/{client_id}', response_model=ClientResponse)

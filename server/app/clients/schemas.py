@@ -19,6 +19,19 @@ class ClientCreate(BaseModel):
         return value.strip() if isinstance(value, str) else value
 
 
+class ClientPatch(ClientCreate):
+    """Omission preserves a field; an explicitly supplied name cannot be null."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+
+    @field_validator('name')
+    @classmethod
+    def reject_null_name(cls, value):
+        if value is None:
+            raise ValueError('Name cannot be null')
+        return value
+
+
 class ClientResponse(BaseModel):
     data: Client
 
