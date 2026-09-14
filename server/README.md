@@ -435,6 +435,19 @@ check that could become stale before deletion.
 Run `python -m unittest tests.test_client_delete -v` to check successful deletion,
 each document relationship, ownership, authentication, and rollback behavior.
 
+## Shared discount types
+
+Task 5.1 adds `DiscountType` in `app/common/enums.py`, a string enum with the
+exact values `NONE`, `FIXED`, and `PERCENTAGE`. Future document schemas can use
+`discount_type: DiscountType` to validate input and serialize the documented
+string values. Unknown and lowercase values are rejected rather than normalized.
+
+The Python values match the existing PostgreSQL `discount_type` enum, so no
+migration is needed. This task defines the allowed types; amount validation and
+discount calculations belong to later tasks. Run
+`python -m unittest tests.test_discount_type -v` to check Pydantic/JSON behavior
+and agreement with PostgreSQL.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
