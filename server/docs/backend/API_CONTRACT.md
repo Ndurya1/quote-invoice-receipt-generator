@@ -264,6 +264,21 @@ changing its timestamp. Missing and foreign-owned clients both return 404
 
 ---
 
+### Delete Client
+
+`DELETE /api/v1/clients/{client_id}` requires an access bearer token. An owned
+client with no document references is hard-deleted and returns HTTP 204 with no
+body. If any Quote, Invoice, or Receipt references the client, regardless of
+document status, deletion returns 409 `CLIENT_IN_USE`. The client and documents
+remain unchanged. Existing `ON DELETE RESTRICT` foreign keys enforce this policy;
+client deletion never cascades to document history.
+
+Missing and foreign-owned clients return 404 `CLIENT_NOT_FOUND`, including repeat
+deletion of an already deleted client. Invalid UUIDs return 422 and invalid
+authentication returns 401.
+
+---
+
 ## 5. Quotes
 
 Endpoints:
@@ -600,6 +615,7 @@ Suggested error codes:
 
 ### Clients
 - `CLIENT_NOT_FOUND`
+- `CLIENT_IN_USE`
 - `CLIENT_OWNERSHIP_MISMATCH`
 
 ### Quotes

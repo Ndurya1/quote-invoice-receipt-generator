@@ -66,7 +66,7 @@ class ClientDetailTests(unittest.TestCase):
 
     def test_openapi_declares_uuid_and_bearer_security(self):
         path = self.client.get('/openapi.json').json()['paths']['/api/v1/clients/{client_id}']
-        self.assertEqual(set(path), {'get', 'patch'})
+        self.assertEqual(set(path), {'get', 'patch', 'delete'})
         operation = path['get']
         self.assertEqual(operation['security'], [{'HTTPBearer': []}])
         parameter = next(p for p in operation['parameters'] if p['name'] == 'client_id')

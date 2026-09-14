@@ -2,13 +2,35 @@
 
 from uuid import UUID
 
-from psycopg import Connection, sql
+from psycopg import Connection, errors, sql
 from psycopg.rows import class_row
 
 from app.clients.models import Client
 from app.clients.queries import get_client_for_user
 from app.clients.schemas import ClientCreate, ClientPatch
 from app.common.errors import DomainError
+
+
+def delete_client(connection: Connection, *, user_id: UUID, client_id: UUID) -> None:
+    """Delete only an owned, unreferenced client; preserve all document history."""
+    try:
+        with connection.transaction():
+            deleted = connection.execute(
+                'DELETE FROM clients WHERE user_id = %s AND id = %s RETURNING id',
+                (user_id, client_id),
+            ).fetchone()
+            if deleted is None:
+                raise DomainError('CLIENT_NOT_FOUND', 'Client not found.', status_code=404)
+    except (errors.ForeignKeyViolation, errors.RestrictViolation) as exc:
+        # Translate only the documented document-to-client constraints after rollback.
+        if exc.diag.constraint_name not in {
+            'quotes_client_id_fkey', 'invoices_client_id_fkey', 'receipts_client_id_fkey',
+        }:
+            raise
+        raise DomainError(
+            'CLIENT_IN_USE', 'Client is referenced by documents and cannot be deleted.',
+            status_code=409,
+        ) from None
 
 
 def update_client(

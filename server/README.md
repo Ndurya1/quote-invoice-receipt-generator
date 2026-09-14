@@ -417,6 +417,24 @@ Success returns HTTP 200 with the stored client in `data`.
 Run `python -m unittest tests.test_client_patch -v` for partial-update, null,
 validation, ownership, authentication, and rollback checks.
 
+## Safe Client deletion
+
+Task 4.7 adds authenticated `DELETE /api/v1/clients/{client_id}`. Unreferenced
+owned clients are hard-deleted with an empty HTTP 204 response. Any referencing
+Quote, Invoice, or Receipt blocks deletion, regardless of document status, and
+returns 409 `CLIENT_IN_USE`. The existing `ON DELETE RESTRICT` foreign keys
+preserve all document history; no migration is needed.
+
+`delete_client()` runs an owner-and-UUID-scoped DELETE inside a transaction.
+It maps only the three documented document/client foreign-key failures after
+rollback; unrelated database failures retain their normal error handling.
+Missing and foreign clients both return 404 `CLIENT_NOT_FOUND`. The SQL delete
+and database constraints enforce the policy without a separate reference-count
+check that could become stale before deletion.
+
+Run `python -m unittest tests.test_client_delete -v` to check successful deletion,
+each document relationship, ownership, authentication, and rollback behavior.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type

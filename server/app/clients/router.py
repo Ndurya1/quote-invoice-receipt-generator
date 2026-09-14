@@ -4,19 +4,29 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from psycopg import Connection
 
 from app.accounts.dependencies import get_current_user
 from app.accounts.models import User
 from app.clients.queries import get_client_for_user, paginate_clients_for_user
 from app.clients.schemas import ClientCreate, ClientListResponse, ClientPatch, ClientResponse
-from app.clients.service import create_client, update_client
+from app.clients.service import create_client, delete_client, update_client
 from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
 
 router = APIRouter(prefix='/clients', tags=['clients'])
+
+
+@router.delete('/{client_id}', status_code=204, response_class=Response)
+def remove_client(
+    client_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> Response:
+    delete_client(connection, user_id=user.id, client_id=client_id)
+    return Response(status_code=204)
 
 
 @router.patch('/{client_id}', response_model=ClientResponse)
