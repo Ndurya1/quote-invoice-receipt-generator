@@ -280,6 +280,40 @@ the input. Verification requires all issued claims and uses a fixed HS256 algori
 Run the login and refresh integration tests against the separate PostgreSQL test
 database with `python -m unittest tests.test_login tests.test_refresh -v`.
 
+## Business profile model
+
+Task 3.1 defines `app/business/models.py` as the typed representation of a stored
+`business_profiles` row. It includes the owner `user_id`, business name, optional
+logo/email/phone/address/tax number, default currency, UUID, and timestamps.
+Like `User`, it is an immutable row model rather than an API request schema.
+
+The existing initial migration supplies the UUID and UTC timestamps, defaults
+currency to `KES`, and enforces one profile per existing user with a unique
+foreign key. Optional contact and tax fields may be null. An explicit currency
+can be stored; the reusable currency validator is described below. Read and update
+endpoints remain Tasks 3.3 and 3.4. No additional migration is needed.
+
+Run `python -m unittest tests.test_business_profile -v` to verify the model against
+PostgreSQL, including defaults, full-field persistence, updated timestamps, and
+database ownership/required-field constraints.
+
+## Currency-code validation
+
+Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
+in `app/common/currency.py`. The function returns an unchanged string containing
+exactly three uppercase ASCII letters, or raises `ValueError`. Request schemas
+can declare `currency: CurrencyCode` (or `default_currency: CurrencyCode`) to use
+the same rule through Pydantic validation.
+
+Lowercase, whitespace, digits, Unicode lookalikes, and non-string inputs are
+rejected rather than normalized or coerced. This is an ISO-style format check,
+not validation against a current ISO 4217 registry. It performs no FX conversion
+and does not choose a default. Future request-schema tasks will apply this type
+to their currency fields.
+
+Run `python -m unittest tests.test_currency -v` for standalone and Pydantic/JSON
+validation tests; no database is required.
+
 ## Current user
 
 `GET /api/v1/auth/me` requires `Authorization: Bearer <access_token>` and returns
