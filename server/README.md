@@ -569,6 +569,70 @@ They do not claim coverage of future Quote, Invoice, or Receipt HTTP endpoints;
 those request schemas and routes must preserve these rules when implemented.
 Run `python -m unittest tests.test_financial_tampering -v` for the focused checks.
 
+## Quote numbering
+
+Task 6.1 adds `next_quote_number(connection, *, user_id)` in
+`app/common/numbering.py`. Each user starts at `QT-0001`; four digits are a minimum
+width, so allocation continues as `QT-10000` and beyond. An atomic PostgreSQL
+upsert increments that user's persistent counter. Concurrent allocations for the
+same user serialize on the counter row; other users have independent sequences.
+
+Migration `002_quote_numbering.sql` adds the internal counter table, seeds it from
+the largest existing numeric `QT-` suffix per user, and adds a trigger preventing
+changes to stored quote numbers. The existing `(user_id, quote_number)` uniqueness
+constraint remains the final duplicate safeguard. Deleting a quote does not reset
+the counter. Legacy nonnumeric numbers are preserved and excluded from seeding.
+
+Call the allocator inside the same transaction that creates the quote and items;
+rollback then restores the allocation too. A standalone call commits its allocation
+and can leave a gap if unused. Always allocate through this helper for new quotes;
+manual inserts do not advance counters. Exhausting the signed BIGINT sequence
+returns `QUOTE_NUMBER_EXHAUSTED` (409). Apply pending migrations with
+`python -m app.db migrate` before using the allocator in the application database.
+
+Run `python -m unittest tests.test_quote_numbering tests.test_database -v` for
+concurrency, independent users, rollback, deletion, immutability, and upgrade tests.
+
+## Invoice numbering
+
+Task 6.2 adds `next_invoice_number(connection, *, user_id)` alongside Quote
+numbering. Each user has an independent sequence beginning at `INV-0001`, with
+minimum four-digit padding. Invoice allocations do not advance Quote counters.
+Atomic counter upserts serialize concurrent allocations for the same user.
+
+Migration `003_invoice_numbering.sql` creates `invoice_number_counters`, seeds
+it from existing numeric `INV-` suffixes, and prevents changes to persisted invoice
+numbers. Deleting invoices does not reuse committed allocations. Call the helper
+inside invoice creation's transaction so failures roll back both document and
+allocation; standalone allocations commit and may leave gaps if unused. Manual
+inserts do not advance counters. Sequence exhaustion returns
+`INVOICE_NUMBER_EXHAUSTED` (409).
+
+Apply pending migrations with `python -m app.db migrate` before using this helper
+in the application database. Run
+`python -m unittest tests.test_invoice_numbering tests.test_quote_numbering tests.test_database -v`
+for concurrency, rollback, upgrades, immutability, and independent-sequence checks.
+
+## Receipt numbering
+
+Task 6.3 adds `next_receipt_number(connection, *, user_id)`, allocating an
+independent per-user sequence from `RCT-0001`. Atomic counter upserts serialize
+concurrent allocations, and numbering expands beyond four digits as needed.
+Quote and Invoice counters are unaffected.
+
+Migration `004_receipt_numbering.sql` adds `receipt_number_counters`, seeds it
+from existing numeric `RCT-` suffixes, and prevents changes to stored receipt
+numbers. Deleting a receipt does not reset its counter. Call the helper inside
+the receipt-creation transaction to roll back allocation with failed creation;
+standalone allocations commit and can leave gaps. Manual inserts do not advance
+counters. Exhaustion returns `RECEIPT_NUMBER_EXHAUSTED` (409).
+
+Apply pending migrations with `python -m app.db migrate` before using the helper
+in the application database. The deletion test proves allocation state survives
+row removal; it does not decide or implement the deferred Receipt deletion API.
+Run `python -m unittest tests.test_receipt_numbering tests.test_invoice_numbering tests.test_quote_numbering tests.test_database -v`
+for all numbering and database checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type

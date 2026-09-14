@@ -400,3 +400,39 @@ Not part of the MVP schema:
 - Tax filing
 - Multi-branch support
 - Object-storage document snapshots
+
+## Internal Quote Number Allocation (Task 6.1)
+
+Migration `002_quote_numbering.sql` adds `quote_number_counters`:
+
+| Field | Type | Constraints |
+|---|---|---|
+| user_id | UUID | PK, FK to users.id, ON DELETE RESTRICT |
+| last_number | BIGINT | NOT NULL, CHECK > 0 |
+
+This internal table stores the last allocated quote suffix per user. Atomic
+upserts serialize allocations; counters survive quote deletion and roll back
+with enclosing quote-creation transactions. The migration seeds counters from
+existing numeric `QT-` suffixes. New quotes must use the allocator; arbitrary
+manual inserts do not advance allocation state. The migration also installs a
+trigger rejecting changes to persisted `quotes.quote_number` values.
+
+## Internal Invoice Number Allocation (Task 6.2)
+
+Migration `003_invoice_numbering.sql` adds `invoice_number_counters` with `user_id`
+as UUID primary key referencing users with ON DELETE RESTRICT, and positive
+non-null BIGINT `last_number`. Invoice counters are independent of Quote counters.
+Atomic upserts allocate suffixes transactionally and counters survive invoice
+deletion. Existing numeric `INV-` suffixes seed the counters during migration.
+New invoices must use the allocator; manual inserts do not advance counters.
+A trigger rejects changes to persisted `invoices.invoice_number` values.
+
+## Internal Receipt Number Allocation (Task 6.3)
+
+Migration `004_receipt_numbering.sql` adds `receipt_number_counters` with UUID
+primary key `user_id` referencing users with ON DELETE RESTRICT, and positive
+non-null BIGINT `last_number`. This sequence is independent of Quote and Invoice
+sequences. Atomic upserts allocate transactionally; counters survive receipt
+deletion. Existing numeric `RCT-` suffixes seed the counters during migration.
+New receipts must use the allocator; manual inserts do not advance counters.
+A trigger rejects changes to persisted `receipts.receipt_number` values.
