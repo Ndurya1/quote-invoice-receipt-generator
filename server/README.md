@@ -448,6 +448,26 @@ discount calculations belong to later tasks. Run
 `python -m unittest tests.test_discount_type -v` to check Pydantic/JSON behavior
 and agreement with PostgreSQL.
 
+## Shared line-item validation
+
+Task 5.2 adds `LineItemInput` in `app/common/line_items.py` for future Quote,
+Invoice, and Receipt request schemas. Description is required, trimmed, and
+nonblank. Quantity is a positive `Decimal` fitting `NUMERIC(12,3)` (up to nine
+integer digits); unit price is a nonnegative `Decimal` fitting `NUMERIC(14,2)`
+(up to twelve integer digits). Excess significant decimal places are rejected,
+not rounded. Non-finite values are rejected.
+
+Decimal strings are recommended for exact amounts. Integer and JSON numeric
+inputs are also accepted and converted to Decimal; validation cannot recover
+precision already lost in a caller's floating-point value. Position defaults to
+0 and must be an integer within PostgreSQL's signed 32-bit range; the current
+schema does not impose a nonnegative-position constraint. Null position is invalid.
+Unknown fields, including caller-supplied totals, are rejected. No totals are
+calculated in this task.
+
+Run `python -m unittest tests.test_line_items -v` to verify required fields,
+numeric boundaries, precision, non-finite values, JSON input, and position rules.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
