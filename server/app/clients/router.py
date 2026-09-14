@@ -1,6 +1,7 @@
 """Authenticated Client endpoints."""
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
@@ -8,13 +9,28 @@ from psycopg import Connection
 
 from app.accounts.dependencies import get_current_user
 from app.accounts.models import User
-from app.clients.queries import paginate_clients_for_user
+from app.clients.queries import get_client_for_user, paginate_clients_for_user
 from app.clients.schemas import ClientCreate, ClientListResponse, ClientResponse
 from app.clients.service import create_client
 from app.common.dependencies import get_database_connection
+from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
 
 router = APIRouter(prefix='/clients', tags=['clients'])
+
+
+@router.get('/{client_id}', response_model=ClientResponse)
+def read_client(
+    client_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    client = get_client_for_user(connection, user_id=user.id, client_id=client_id)
+    if client is None:
+        raise DomainError('CLIENT_NOT_FOUND', 'Client not found.', status_code=404)
+    response = resource_response(client)
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @router.get('', response_model=ClientListResponse)

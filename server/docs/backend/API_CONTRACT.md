@@ -238,6 +238,18 @@ do not change ownership scope. Search and configurable sorting are later tasks.
 
 ---
 
+### Client Detail
+
+`GET /api/v1/clients/{client_id}` requires an access bearer token and a UUID path
+parameter. It returns HTTP 200 with the owned client's stored fields in `data`,
+using the same shape as creation, and `Cache-Control: no-store`. Missing and
+foreign-owned clients both return 404 `CLIENT_NOT_FOUND` with the message
+`Client not found.` Invalid UUIDs return 422 `VALIDATION_ERROR`; invalid
+authentication returns 401 `AUTHENTICATION_REQUIRED`. Caller-supplied owner IDs
+cannot change the authenticated ownership scope.
+
+---
+
 ## 5. Quotes
 
 Endpoints:

@@ -390,6 +390,16 @@ the dataset between them. Search and configurable sorting remain later tasks.
 Run `python -m unittest tests.test_client_list tests.test_client_creation tests.test_client_queries -v`
 for pagination, ownership isolation, validation, and Client regression tests.
 
+## Client detail
+
+Task 4.5 adds authenticated `GET /api/v1/clients/{client_id}`. The route validates
+the UUID, resolves the current user, and calls `get_client_for_user()` with both
+IDs. Success returns HTTP 200 with the stored client in `data` and
+`Cache-Control: no-store`. Missing and foreign-owned clients receive the same
+404 `CLIENT_NOT_FOUND` response, so the endpoint does not disclose another
+account's client records. Invalid UUIDs return 422; invalid authentication returns
+401. Run `python -m unittest tests.test_client_detail -v` for endpoint checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
