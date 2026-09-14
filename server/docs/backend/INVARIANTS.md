@@ -57,6 +57,14 @@ Recommended future refinement:
 
 - Persisted monetary values must use fixed-precision decimal types.
 - Binary floating-point types must not be used for persisted monetary values.
+- Line totals are computed with Decimal multiplication, then rounded once to two
+  decimal places using ROUND_HALF_UP. Results outside NUMERIC(14,2) are rejected.
+- Tax amounts are computed as subtotal × tax_rate / 100 with Decimal, then
+  rounded once to two decimal places using ROUND_HALF_UP. Results outside
+  NUMERIC(14,2) are rejected.
+- Percentage discount amounts are computed from subtotal using Decimal and
+  rounded once to two places using ROUND_HALF_UP. NONE requires discount value
+  zero. Discounts cannot exceed subtotal plus tax amount.
 - `quantity > 0`.
 - `unit_price >= 0`.
 - `tax_rate >= 0`.

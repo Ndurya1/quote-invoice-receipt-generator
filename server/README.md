@@ -435,6 +435,140 @@ check that could become stale before deletion.
 Run `python -m unittest tests.test_client_delete -v` to check successful deletion,
 each document relationship, ownership, authentication, and rollback behavior.
 
+## Shared discount types
+
+Task 5.1 adds `DiscountType` in `app/common/enums.py`, a string enum with the
+exact values `NONE`, `FIXED`, and `PERCENTAGE`. Future document schemas can use
+`discount_type: DiscountType` to validate input and serialize the documented
+string values. Unknown and lowercase values are rejected rather than normalized.
+
+The Python values match the existing PostgreSQL `discount_type` enum, so no
+migration is needed. This task defines the allowed types; amount validation and
+discount calculations belong to later tasks. Run
+`python -m unittest tests.test_discount_type -v` to check Pydantic/JSON behavior
+and agreement with PostgreSQL.
+
+## Shared line-item validation
+
+Task 5.2 adds `LineItemInput` in `app/common/line_items.py` for future Quote,
+Invoice, and Receipt request schemas. Description is required, trimmed, and
+nonblank. Quantity is a positive `Decimal` fitting `NUMERIC(12,3)` (up to nine
+integer digits); unit price is a nonnegative `Decimal` fitting `NUMERIC(14,2)`
+(up to twelve integer digits). Excess significant decimal places are rejected,
+not rounded. Non-finite values are rejected.
+
+Decimal strings are recommended for exact amounts. Integer and JSON numeric
+inputs are also accepted and converted to Decimal; validation cannot recover
+precision already lost in a caller's floating-point value. Position defaults to
+0 and must be an integer within PostgreSQL's signed 32-bit range; the current
+schema does not impose a nonnegative-position constraint. Null position is invalid.
+Unknown fields, including caller-supplied totals, are rejected. No totals are
+calculated in this task.
+
+Run `python -m unittest tests.test_line_items -v` to verify required fields,
+numeric boundaries, precision, non-finite values, JSON input, and position rules.
+
+## Line-total calculation
+
+Task 5.3 adds `calculate_line_total(item)` in `app/common/calculations.py`.
+Pass a validated `LineItemInput`; the function multiplies its Decimal quantity
+and unit price and returns a Decimal with two fractional digits. It never accepts
+a caller-supplied total or modifies the input. Validate requests before calling
+it; do not bypass the input schema using unchecked model construction.
+
+The rounding policy is `ROUND_HALF_UP`, applied once after multiplication to
+match the monetary scale: `1.005` becomes `1.01`. A result exceeding
+`999999999999.99` after rounding raises `LINE_TOTAL_OUT_OF_RANGE` (422). Tiny
+positive products may round to `0.00`; a zero unit price is valid. An explicit
+local Decimal context prevents caller precision, rounding, or trap settings
+from changing the result. Subtotals, tax, and discounts are later tasks.
+
+Run `python -m unittest tests.test_line_total tests.test_line_items -v` for exact
+arithmetic, rounding, zero-price, range, and context-isolation checks.
+
+## Subtotal calculation
+
+Task 5.4 adds `calculate_subtotal(items)` to `app/common/calculations.py`.
+It accepts an iterable of validated `LineItemInput` objects, derives each line
+total with `calculate_line_total()`, and sums those rounded values using Decimal.
+For example, two lines that each round from `0.005` to `0.01` produce a subtotal
+of `0.02`. The helper does not sum unrounded products or accept submitted totals.
+
+An empty iterable returns `Decimal('0.00')`; requiring nonempty document items
+belongs to later request-validation tasks. A subtotal above `999999999999.99`
+raises `SUBTOTAL_OUT_OF_RANGE` (422), while an overflowing individual line retains
+`LINE_TOTAL_OUT_OF_RANGE`. The local Decimal context isolates arithmetic from
+caller settings. Run `python -m unittest tests.test_subtotal tests.test_line_total -v`
+for rounding consistency, exact sums, empty/generator input, and overflow checks.
+
+## Tax calculation
+
+Task 5.5 adds `calculate_tax_amount(subtotal, tax_rate=Decimal('0'))`. It applies
+`subtotal * tax_rate / 100` using an isolated Decimal context and rounds once to
+two places with `ROUND_HALF_UP`. The subtotal must come from backend calculations.
+Both arguments must be finite Decimal values: subtotal must fit nonnegative
+`NUMERIC(14,2)` and tax rate must fit nonnegative `NUMERIC(6,3)` (up to `999.999`).
+Rates above 100 are permitted by the existing schema. Omission means zero tax;
+explicit null is invalid. Parsing API strings/numbers belongs to request schemas.
+
+Invalid inputs raise `INVALID_SUBTOTAL` or `INVALID_TAX_RATE` (422). A rounded tax
+amount exceeding `999999999999.99` raises `TAX_AMOUNT_OUT_OF_RANGE` (422).
+Zero tax returns `Decimal('0.00')`. Run `python -m unittest tests.test_tax -v` for
+percentage arithmetic, precision, rounding, defaults, and overflow checks.
+
+## Discount calculation
+
+Task 5.6 adds `calculate_discount_amount(subtotal, discount_type=DiscountType.NONE,
+discount_value=Decimal('0'), *, tax_amount=Decimal('0'))`. Supply backend-derived
+subtotal and tax amounts, an actual `DiscountType` enum, and Decimal values.
+All amounts and the discount value must fit nonnegative `NUMERIC(14,2)`.
+
+NONE requires a zero value and returns `0.00`. PERCENTAGE accepts 0–100 inclusive
+and applies to the subtotal, rounding once to two places with `ROUND_HALF_UP`.
+FIXED uses the supplied value. A discount may equal subtotal plus tax but may not
+exceed it; violations return `INVALID_DISCOUNT` (422). Fixed discounts may exceed
+the subtotal when tax covers the difference. Invalid subtotal/tax inputs return
+`INVALID_SUBTOTAL`/`INVALID_TAX_AMOUNT` (422). The helper isolates Decimal settings
+and returns a two-place Decimal. Final-total orchestration remains task 5.7.
+
+Run `python -m unittest tests.test_discount -v` for modes, precision, rounding,
+percentage limits, nonnegative-final-total enforcement, and context isolation.
+
+## Authoritative document totals
+
+Task 5.7 adds `calculate_document_totals()` in `app/common/totals.py`. Pass an
+iterable of validated `LineItemInput` values and optional Decimal tax rate,
+`DiscountType`, and Decimal discount value. The service consumes items once,
+calculates each line once, sums the rounded line totals, calculates tax and
+discount, then derives `total = subtotal + tax_amount - discount_amount`.
+It shares the existing arithmetic helpers and their rounding/range rules.
+
+The result is an immutable `DocumentTotals` with a tuple of immutable calculated
+line items and all financial fields needed for persistence. No submitted totals,
+owner IDs, or document-specific state enter this service, so Quote, Invoice,
+Receipt, and conversion services can reuse it. It does not write to the database.
+Inputs must be validated before calling; do not use unchecked model construction.
+
+Empty items raise `EMPTY_LINE_ITEMS` (422). A final total outside NUMERIC(14,2)
+raises `TOTAL_OUT_OF_RANGE` (422); errors from individual helpers propagate.
+Tax rate is returned at three decimal places; discount value and monetary amounts
+use two. A temporary subtotal-plus-tax sum may exceed the range if discount brings
+the final stored total back into range. Run
+`python -m unittest tests.test_document_totals -v` for complete-document checks.
+
+## Computed-field tampering tests
+
+Task 5.8 adds `tests/test_financial_tampering.py`. JSON arrays validated through
+`LineItemInput` reject injected `line_total`, `subtotal`, `tax_amount`,
+`discount_amount`, and `total` fields, including null and structured values.
+The totals service refuses these fields as keyword arguments; a valid input
+still produces all five expected backend-derived amounts after rejected attempts.
+
+These tests cover the existing shared validation and calculation boundaries.
+They do not claim coverage of future Quote, Invoice, or Receipt HTTP endpoints;
+those request schemas and routes must preserve these rules when implemented.
+Run `python -m unittest tests.test_financial_tampering -v` for the focused checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
