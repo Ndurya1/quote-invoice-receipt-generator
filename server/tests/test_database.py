@@ -84,6 +84,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
         self.assertEqual({row[0] for row in tables}, {
             "users", "business_profiles", "clients", "quotes", "quote_items", "invoices",
             "invoice_items", "receipts", "receipt_items", "schema_migrations", "quote_number_counters", "invoice_number_counters",
+            "receipt_number_counters",
         })
         self.assertEqual(self.connection.execute("SHOW timezone").fetchone()[0], "UTC")
         self.assertEqual(self.connection.execute(

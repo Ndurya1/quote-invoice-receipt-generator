@@ -613,6 +613,26 @@ in the application database. Run
 `python -m unittest tests.test_invoice_numbering tests.test_quote_numbering tests.test_database -v`
 for concurrency, rollback, upgrades, immutability, and independent-sequence checks.
 
+## Receipt numbering
+
+Task 6.3 adds `next_receipt_number(connection, *, user_id)`, allocating an
+independent per-user sequence from `RCT-0001`. Atomic counter upserts serialize
+concurrent allocations, and numbering expands beyond four digits as needed.
+Quote and Invoice counters are unaffected.
+
+Migration `004_receipt_numbering.sql` adds `receipt_number_counters`, seeds it
+from existing numeric `RCT-` suffixes, and prevents changes to stored receipt
+numbers. Deleting a receipt does not reset its counter. Call the helper inside
+the receipt-creation transaction to roll back allocation with failed creation;
+standalone allocations commit and can leave gaps. Manual inserts do not advance
+counters. Exhaustion returns `RECEIPT_NUMBER_EXHAUSTED` (409).
+
+Apply pending migrations with `python -m app.db migrate` before using the helper
+in the application database. The deletion test proves allocation state survives
+row removal; it does not decide or implement the deferred Receipt deletion API.
+Run `python -m unittest tests.test_receipt_numbering tests.test_invoice_numbering tests.test_quote_numbering tests.test_database -v`
+for all numbering and database checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type

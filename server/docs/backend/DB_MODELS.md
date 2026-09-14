@@ -426,3 +426,13 @@ Atomic upserts allocate suffixes transactionally and counters survive invoice
 deletion. Existing numeric `INV-` suffixes seed the counters during migration.
 New invoices must use the allocator; manual inserts do not advance counters.
 A trigger rejects changes to persisted `invoices.invoice_number` values.
+
+## Internal Receipt Number Allocation (Task 6.3)
+
+Migration `004_receipt_numbering.sql` adds `receipt_number_counters` with UUID
+primary key `user_id` referencing users with ON DELETE RESTRICT, and positive
+non-null BIGINT `last_number`. This sequence is independent of Quote and Invoice
+sequences. Atomic upserts allocate transactionally; counters survive receipt
+deletion. Existing numeric `RCT-` suffixes seed the counters during migration.
+New receipts must use the allocator; manual inserts do not advance counters.
+A trigger rejects changes to persisted `receipts.receipt_number` values.
