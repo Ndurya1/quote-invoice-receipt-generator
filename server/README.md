@@ -337,6 +337,104 @@ refreshes `updated_at` on each update. No profile selection comes from the body.
 Run `python -m unittest tests.test_business_profile_put tests.test_business_profile_read -v`
 for creation, replacement, validation, ownership, authentication, and rollback checks.
 
+## Client model and user-scoped queries
+
+`app/clients/models.py` represents persisted client rows with UUIDs, owner ID,
+name, nullable contact fields, and timestamps. The existing initial migration
+supplies the table, constraints, and indexes; no new migration is needed.
+
+Task 4.2 adds `get_client_for_user(connection, *, user_id, client_id)` and
+`list_clients_for_user(connection, *, user_id)` in `app/clients/queries.py`.
+Callers must pass `user_id` from authentication. Both parameterized SQL queries
+filter by owner in the database. Detail retrieval also filters by client UUID
+and returns `None` for missing or foreign-owned clients. Lists return `Client`
+objects ordered by `created_at`, then UUID, or an empty list when none match.
+These internal queries do not authenticate callers themselves. HTTP endpoints
+and pagination will be added in their respective tasks.
+
+Run `python -m unittest tests.test_client_queries -v` for PostgreSQL-backed
+ownership isolation, row mapping, list ordering, and missing-client checks.
+
+## Client creation
+
+Task 4.3 adds `POST /api/v1/clients` with access bearer authentication. Supply a
+required `name` and optional nullable `email`, `phone`, and `address`. Name is
+trimmed and limited to 1–160 characters; email is validated and limited to 255
+characters; phone is text limited to 30 characters. Duplicate emails are allowed.
+Unknown and server-managed fields are rejected with 422 `VALIDATION_ERROR`.
+
+The route passes the verified user's ID and `ClientCreate` input to
+`create_client()`. The service inserts the row in a transaction using parameterized
+SQL; PostgreSQL generates the UUID and timestamps. Success returns HTTP 201 with
+the stored client inside `data` and `Cache-Control: no-store`. Missing or invalid
+authentication returns 401. A business profile is not required to create clients.
+
+Run `python -m unittest tests.test_client_creation tests.test_client_queries -v`
+for PostgreSQL-backed creation, validation, duplicate-email, ownership, authentication,
+and transaction rollback checks.
+
+## Client listing
+
+Task 4.4 adds authenticated `GET /api/v1/clients?page=1&page_size=20`. It returns
+`data` and `meta` (`page`, `page_size`, `total`) using the collection envelope.
+Both the count and page queries filter by the verified owner ID. SQL applies
+`LIMIT` and `OFFSET`, ordered by creation time and UUID. The list endpoint does
+not load all clients into Python to paginate them.
+
+Page defaults to 1 (maximum 2147483647); page size defaults to 20 and is limited
+to 1–100. Invalid values return 422. Empty and out-of-range pages return an empty
+list with the owner's total count. Successful responses use `Cache-Control:
+no-store`. Count and page are separate queries, so concurrent writes may change
+the dataset between them. Search and configurable sorting remain later tasks.
+
+Run `python -m unittest tests.test_client_list tests.test_client_creation tests.test_client_queries -v`
+for pagination, ownership isolation, validation, and Client regression tests.
+
+## Client detail
+
+Task 4.5 adds authenticated `GET /api/v1/clients/{client_id}`. The route validates
+the UUID, resolves the current user, and calls `get_client_for_user()` with both
+IDs. Success returns HTTP 200 with the stored client in `data` and
+`Cache-Control: no-store`. Missing and foreign-owned clients receive the same
+404 `CLIENT_NOT_FOUND` response, so the endpoint does not disclose another
+account's client records. Invalid UUIDs return 422; invalid authentication returns
+401. Run `python -m unittest tests.test_client_detail -v` for endpoint checks.
+
+## Client partial updates
+
+Task 4.6 adds authenticated `PATCH /api/v1/clients/{client_id}`. Send only the
+editable fields to change: name, email, phone, or address. Omitted fields stay
+unchanged; null clears a contact field but cannot clear name. Validation reuses
+the creation schema's field rules and rejection of unknown/server-managed fields.
+
+`ClientPatch` tracks supplied fields; `update_client()` uses `exclude_unset=True`
+and a fixed allowlist of column names to construct a parameterized SQL update.
+Both owner and client UUID constrain the update. ID, owner, and creation time
+are preserved; the database maintains `updated_at`. Empty `{}` reads the owned
+client without writing. Missing and foreign clients return 404 `CLIENT_NOT_FOUND`.
+Success returns HTTP 200 with the stored client in `data`.
+
+Run `python -m unittest tests.test_client_patch -v` for partial-update, null,
+validation, ownership, authentication, and rollback checks.
+
+## Safe Client deletion
+
+Task 4.7 adds authenticated `DELETE /api/v1/clients/{client_id}`. Unreferenced
+owned clients are hard-deleted with an empty HTTP 204 response. Any referencing
+Quote, Invoice, or Receipt blocks deletion, regardless of document status, and
+returns 409 `CLIENT_IN_USE`. The existing `ON DELETE RESTRICT` foreign keys
+preserve all document history; no migration is needed.
+
+`delete_client()` runs an owner-and-UUID-scoped DELETE inside a transaction.
+It maps only the three documented document/client foreign-key failures after
+rollback; unrelated database failures retain their normal error handling.
+Missing and foreign clients both return 404 `CLIENT_NOT_FOUND`. The SQL delete
+and database constraints enforce the policy without a separate reference-count
+check that could become stale before deletion.
+
+Run `python -m unittest tests.test_client_delete -v` to check successful deletion,
+each document relationship, ownership, authentication, and rollback behavior.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type

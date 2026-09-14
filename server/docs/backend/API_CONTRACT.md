@@ -199,6 +199,18 @@ Endpoints:
 
 ### Create Client
 
+`POST /api/v1/clients` requires an access bearer token. The owner is assigned
+from authentication. Success returns HTTP 201 with the stored client in `data`:
+`id`, `user_id`, `name`, `email`, `phone`, `address`, `created_at`, and `updated_at`.
+The response includes `Cache-Control: no-store`.
+
+Name is required, trimmed, and must contain 1–160 characters. Email, phone, and
+address are optional and nullable. Email must be valid and at most 255 characters;
+phone is text of at most 30 characters. Duplicate client emails are allowed.
+Unknown or server-managed fields (`id`, `user_id`, timestamps) are rejected with
+422 `VALIDATION_ERROR`, as are invalid editable values. Invalid authentication
+returns 401 `AUTHENTICATION_REQUIRED`. Creation does not require a business profile.
+
 Request:
 
 ```json
@@ -209,6 +221,61 @@ Request:
   "address": "Nairobi, Kenya"
 }
 ```
+
+---
+
+### List Clients
+
+`GET /api/v1/clients` requires an access bearer token. It returns HTTP 200 with
+`data` containing only the authenticated user's clients and `meta` containing
+`page`, `page_size`, and that user's total client count. Query parameters default
+to `page=1` and `page_size=20`; page must be 1–2147483647 and page size 1–100.
+Invalid pagination returns 422 `VALIDATION_ERROR`. Results are ordered by
+`created_at` ascending, then UUID ascending. Empty accounts and pages past the
+end return an empty list with the requested pagination values and scoped total.
+Successful responses include `Cache-Control: no-store`. Caller-supplied user IDs
+do not change ownership scope. Search and configurable sorting are later tasks.
+
+---
+
+### Client Detail
+
+`GET /api/v1/clients/{client_id}` requires an access bearer token and a UUID path
+parameter. It returns HTTP 200 with the owned client's stored fields in `data`,
+using the same shape as creation, and `Cache-Control: no-store`. Missing and
+foreign-owned clients both return 404 `CLIENT_NOT_FOUND` with the message
+`Client not found.` Invalid UUIDs return 422 `VALIDATION_ERROR`; invalid
+authentication returns 401 `AUTHENTICATION_REQUIRED`. Caller-supplied owner IDs
+cannot change the authenticated ownership scope.
+
+---
+
+### Update Client
+
+`PATCH /api/v1/clients/{client_id}` requires an access bearer token and returns
+HTTP 200 with the updated client in `data` and `Cache-Control: no-store`.
+Only supplied `name`, `email`, `phone`, and `address` fields are changed.
+Omitted fields are preserved; explicit null clears contact fields but is invalid
+for name. Supplied values follow creation validation, including trimming name.
+Unknown fields and server-managed IDs/ownership/timestamps return 422
+`VALIDATION_ERROR`. An empty object returns the owned client without writing or
+changing its timestamp. Missing and foreign-owned clients both return 404
+`CLIENT_NOT_FOUND`; malformed UUIDs return 422 and invalid authentication 401.
+
+---
+
+### Delete Client
+
+`DELETE /api/v1/clients/{client_id}` requires an access bearer token. An owned
+client with no document references is hard-deleted and returns HTTP 204 with no
+body. If any Quote, Invoice, or Receipt references the client, regardless of
+document status, deletion returns 409 `CLIENT_IN_USE`. The client and documents
+remain unchanged. Existing `ON DELETE RESTRICT` foreign keys enforce this policy;
+client deletion never cascades to document history.
+
+Missing and foreign-owned clients return 404 `CLIENT_NOT_FOUND`, including repeat
+deletion of an already deleted client. Invalid UUIDs return 422 and invalid
+authentication returns 401.
 
 ---
 
@@ -548,6 +615,7 @@ Suggested error codes:
 
 ### Clients
 - `CLIENT_NOT_FOUND`
+- `CLIENT_IN_USE`
 - `CLIENT_OWNERSHIP_MISMATCH`
 
 ### Quotes
