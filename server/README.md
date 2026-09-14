@@ -534,6 +534,28 @@ and returns a two-place Decimal. Final-total orchestration remains task 5.7.
 Run `python -m unittest tests.test_discount -v` for modes, precision, rounding,
 percentage limits, nonnegative-final-total enforcement, and context isolation.
 
+## Authoritative document totals
+
+Task 5.7 adds `calculate_document_totals()` in `app/common/totals.py`. Pass an
+iterable of validated `LineItemInput` values and optional Decimal tax rate,
+`DiscountType`, and Decimal discount value. The service consumes items once,
+calculates each line once, sums the rounded line totals, calculates tax and
+discount, then derives `total = subtotal + tax_amount - discount_amount`.
+It shares the existing arithmetic helpers and their rounding/range rules.
+
+The result is an immutable `DocumentTotals` with a tuple of immutable calculated
+line items and all financial fields needed for persistence. No submitted totals,
+owner IDs, or document-specific state enter this service, so Quote, Invoice,
+Receipt, and conversion services can reuse it. It does not write to the database.
+Inputs must be validated before calling; do not use unchecked model construction.
+
+Empty items raise `EMPTY_LINE_ITEMS` (422). A final total outside NUMERIC(14,2)
+raises `TOTAL_OUT_OF_RANGE` (422); errors from individual helpers propagate.
+Tax rate is returned at three decimal places; discount value and monetary amounts
+use two. A temporary subtotal-plus-tax sum may exceed the range if discount brings
+the final stored total back into range. Run
+`python -m unittest tests.test_document_totals -v` for complete-document checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type

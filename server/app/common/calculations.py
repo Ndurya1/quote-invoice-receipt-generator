@@ -75,10 +75,15 @@ def calculate_tax_amount(subtotal: Decimal, tax_rate: Decimal = Decimal('0')) ->
 
 def calculate_subtotal(items: Iterable[LineItemInput]) -> Decimal:
     """Sum authoritative rounded line totals, checking the monetary range as we go."""
+    return _sum_line_totals(calculate_line_total(item) for item in items)
+
+
+def _sum_line_totals(line_totals: Iterable[Decimal]) -> Decimal:
+    """Internal sum of backend-calculated, nonnegative monetary amounts."""
     with localcontext(Context(prec=32, rounding=ROUND_HALF_UP)):
         subtotal = Decimal('0.00')
-        for item in items:
-            subtotal += calculate_line_total(item)
+        for line_total in line_totals:
+            subtotal += line_total
             # Nonnegative line totals mean an overflow cannot be undone later.
             if subtotal > MAX_MONEY:
                 raise DomainError(
