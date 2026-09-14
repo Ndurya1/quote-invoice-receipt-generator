@@ -2,12 +2,42 @@
 
 from collections.abc import Iterable
 from decimal import Context, Decimal, ROUND_HALF_UP, localcontext
+from typing import Annotated
+
+from pydantic import Field, TypeAdapter, ValidationError
 
 from app.common.errors import DomainError
 from app.common.line_items import LineItemInput
 
 MONEY_QUANTUM = Decimal('0.01')
 MAX_MONEY = Decimal('999999999999.99')
+
+_MONEY_INPUT = TypeAdapter(Annotated[Decimal, Field(
+    strict=True, ge=0, max_digits=14, decimal_places=2, allow_inf_nan=False,
+)])
+_TAX_RATE_INPUT = TypeAdapter(Annotated[Decimal, Field(
+    strict=True, ge=0, max_digits=6, decimal_places=3, allow_inf_nan=False,
+)])
+
+
+def calculate_tax_amount(subtotal: Decimal, tax_rate: Decimal = Decimal('0')) -> Decimal:
+    """Apply a percentage rate to a backend-derived subtotal, rounding once."""
+    with localcontext(Context(prec=32, rounding=ROUND_HALF_UP)):
+        try:
+            subtotal = _MONEY_INPUT.validate_python(subtotal)
+        except ValidationError:
+            raise DomainError('INVALID_SUBTOTAL', 'Subtotal must be a valid nonnegative Decimal amount.',
+                              status_code=422) from None
+        try:
+            tax_rate = _TAX_RATE_INPUT.validate_python(tax_rate)
+        except ValidationError:
+            raise DomainError('INVALID_TAX_RATE', 'Tax rate must be a valid nonnegative Decimal percentage.',
+                              status_code=422) from None
+        amount = (subtotal * tax_rate / Decimal('100')).quantize(MONEY_QUANTUM)
+    if amount > MAX_MONEY:
+        raise DomainError('TAX_AMOUNT_OUT_OF_RANGE', 'Tax amount exceeds the supported monetary range.',
+                          status_code=422)
+    return amount.copy_abs()
 
 
 def calculate_subtotal(items: Iterable[LineItemInput]) -> Decimal:

@@ -501,6 +501,21 @@ raises `SUBTOTAL_OUT_OF_RANGE` (422), while an overflowing individual line retai
 caller settings. Run `python -m unittest tests.test_subtotal tests.test_line_total -v`
 for rounding consistency, exact sums, empty/generator input, and overflow checks.
 
+## Tax calculation
+
+Task 5.5 adds `calculate_tax_amount(subtotal, tax_rate=Decimal('0'))`. It applies
+`subtotal * tax_rate / 100` using an isolated Decimal context and rounds once to
+two places with `ROUND_HALF_UP`. The subtotal must come from backend calculations.
+Both arguments must be finite Decimal values: subtotal must fit nonnegative
+`NUMERIC(14,2)` and tax rate must fit nonnegative `NUMERIC(6,3)` (up to `999.999`).
+Rates above 100 are permitted by the existing schema. Omission means zero tax;
+explicit null is invalid. Parsing API strings/numbers belongs to request schemas.
+
+Invalid inputs raise `INVALID_SUBTOTAL` or `INVALID_TAX_RATE` (422). A rounded tax
+amount exceeding `999999999999.99` raises `TAX_AMOUNT_OUT_OF_RANGE` (422).
+Zero tax returns `Decimal('0.00')`. Run `python -m unittest tests.test_tax -v` for
+percentage arithmetic, precision, rounding, defaults, and overflow checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
