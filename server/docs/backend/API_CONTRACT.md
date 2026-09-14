@@ -224,6 +224,20 @@ Request:
 
 ---
 
+### List Clients
+
+`GET /api/v1/clients` requires an access bearer token. It returns HTTP 200 with
+`data` containing only the authenticated user's clients and `meta` containing
+`page`, `page_size`, and that user's total client count. Query parameters default
+to `page=1` and `page_size=20`; page must be 1–2147483647 and page size 1–100.
+Invalid pagination returns 422 `VALIDATION_ERROR`. Results are ordered by
+`created_at` ascending, then UUID ascending. Empty accounts and pages past the
+end return an empty list with the requested pagination values and scoped total.
+Successful responses include `Cache-Control: no-store`. Caller-supplied user IDs
+do not change ownership scope. Search and configurable sorting are later tasks.
+
+---
+
 ## 5. Quotes
 
 Endpoints:

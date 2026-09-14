@@ -91,6 +91,6 @@ class ClientCreationTests(unittest.TestCase):
 
     def test_openapi_documents_authenticated_creation(self):
         path = self.client.get('/openapi.json').json()['paths']['/api/v1/clients']
-        self.assertEqual(set(path), {'post'})
+        self.assertEqual(set(path), {'get', 'post'})
         self.assertEqual(path['post']['security'], [{'HTTPBearer': []}])
         self.assertIn('201', path['post']['responses'])

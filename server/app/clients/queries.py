@@ -30,3 +30,21 @@ def list_clients_for_user(connection: Connection, *, user_id: UUID) -> list[Clie
             (user_id,),
         )
         return cursor.fetchall()
+
+
+def paginate_clients_for_user(
+    connection: Connection, *, user_id: UUID, page: int, page_size: int,
+) -> tuple[list[Client], int]:
+    """Count and fetch only the authenticated owner's requested page."""
+    if not 1 <= page <= 2147483647 or not 1 <= page_size <= 100:
+        raise ValueError('Invalid client pagination bounds')
+    total = connection.execute(
+        'SELECT count(*) FROM clients WHERE user_id = %s', (user_id,),
+    ).fetchone()[0]
+    with connection.cursor(row_factory=class_row(Client)) as cursor:
+        cursor.execute(
+            'SELECT id, user_id, name, email, phone, address, created_at, updated_at '
+            'FROM clients WHERE user_id = %s ORDER BY created_at, id LIMIT %s OFFSET %s',
+            (user_id, page_size, (page - 1) * page_size),
+        )
+        return cursor.fetchall(), total

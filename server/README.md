@@ -373,6 +373,23 @@ Run `python -m unittest tests.test_client_creation tests.test_client_queries -v`
 for PostgreSQL-backed creation, validation, duplicate-email, ownership, authentication,
 and transaction rollback checks.
 
+## Client listing
+
+Task 4.4 adds authenticated `GET /api/v1/clients?page=1&page_size=20`. It returns
+`data` and `meta` (`page`, `page_size`, `total`) using the collection envelope.
+Both the count and page queries filter by the verified owner ID. SQL applies
+`LIMIT` and `OFFSET`, ordered by creation time and UUID. The list endpoint does
+not load all clients into Python to paginate them.
+
+Page defaults to 1 (maximum 2147483647); page size defaults to 20 and is limited
+to 1–100. Invalid values return 422. Empty and out-of-range pages return an empty
+list with the owner's total count. Successful responses use `Cache-Control:
+no-store`. Count and page are separate queries, so concurrent writes may change
+the dataset between them. Search and configurable sorting remain later tasks.
+
+Run `python -m unittest tests.test_client_list tests.test_client_creation tests.test_client_queries -v`
+for pagination, ownership isolation, validation, and Client regression tests.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type

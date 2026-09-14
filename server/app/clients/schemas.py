@@ -21,3 +21,14 @@ class ClientCreate(BaseModel):
 
 class ClientResponse(BaseModel):
     data: Client
+
+
+class ClientPageMeta(BaseModel):
+    page: int
+    page_size: int
+    total: int
+
+
+class ClientListResponse(BaseModel):
+    data: list[Client]
+    meta: ClientPageMeta
