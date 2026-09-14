@@ -556,6 +556,19 @@ use two. A temporary subtotal-plus-tax sum may exceed the range if discount brin
 the final stored total back into range. Run
 `python -m unittest tests.test_document_totals -v` for complete-document checks.
 
+## Computed-field tampering tests
+
+Task 5.8 adds `tests/test_financial_tampering.py`. JSON arrays validated through
+`LineItemInput` reject injected `line_total`, `subtotal`, `tax_amount`,
+`discount_amount`, and `total` fields, including null and structured values.
+The totals service refuses these fields as keyword arguments; a valid input
+still produces all five expected backend-derived amounts after rejected attempts.
+
+These tests cover the existing shared validation and calculation boundaries.
+They do not claim coverage of future Quote, Invoice, or Receipt HTTP endpoints;
+those request schemas and routes must preserve these rules when implemented.
+Run `python -m unittest tests.test_financial_tampering -v` for the focused checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
