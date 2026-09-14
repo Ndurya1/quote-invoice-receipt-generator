@@ -146,6 +146,17 @@ Because an authenticated user has one business profile:
 - `GET /api/v1/business-profile`
 - `PUT /api/v1/business-profile`
 
+Retrieval requires an access bearer token and resolves ownership from the
+authenticated user. Caller-supplied `user_id` is not used for selection.
+Success returns HTTP 200 in the `data` envelope with `id`, `user_id`,
+`business_name`, `logo_url`, `email`, `phone`, `address`, `tax_number`,
+`default_currency`, `created_at`, and `updated_at`. Nullable fields remain null.
+The response includes `Cache-Control: no-store`.
+
+If the authenticated user has no profile, retrieval returns HTTP 404 with
+`BUSINESS_PROFILE_NOT_FOUND`; it does not create one. Missing or invalid
+authentication returns HTTP 401 `AUTHENTICATION_REQUIRED`.
+
 Example update:
 
 ```json
