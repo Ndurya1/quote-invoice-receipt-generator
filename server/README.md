@@ -337,6 +337,24 @@ refreshes `updated_at` on each update. No profile selection comes from the body.
 Run `python -m unittest tests.test_business_profile_put tests.test_business_profile_read -v`
 for creation, replacement, validation, ownership, authentication, and rollback checks.
 
+## Client model and user-scoped queries
+
+`app/clients/models.py` represents persisted client rows with UUIDs, owner ID,
+name, nullable contact fields, and timestamps. The existing initial migration
+supplies the table, constraints, and indexes; no new migration is needed.
+
+Task 4.2 adds `get_client_for_user(connection, *, user_id, client_id)` and
+`list_clients_for_user(connection, *, user_id)` in `app/clients/queries.py`.
+Callers must pass `user_id` from authentication. Both parameterized SQL queries
+filter by owner in the database. Detail retrieval also filters by client UUID
+and returns `None` for missing or foreign-owned clients. Lists return `Client`
+objects ordered by `created_at`, then UUID, or an empty list when none match.
+These internal queries do not authenticate callers themselves. HTTP endpoints
+and pagination will be added in their respective tasks.
+
+Run `python -m unittest tests.test_client_queries -v` for PostgreSQL-backed
+ownership isolation, row mapping, list ordering, and missing-client checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
