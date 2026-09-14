@@ -400,3 +400,19 @@ Not part of the MVP schema:
 - Tax filing
 - Multi-branch support
 - Object-storage document snapshots
+
+## Internal Quote Number Allocation (Task 6.1)
+
+Migration `002_quote_numbering.sql` adds `quote_number_counters`:
+
+| Field | Type | Constraints |
+|---|---|---|
+| user_id | UUID | PK, FK to users.id, ON DELETE RESTRICT |
+| last_number | BIGINT | NOT NULL, CHECK > 0 |
+
+This internal table stores the last allocated quote suffix per user. Atomic
+upserts serialize allocations; counters survive quote deletion and roll back
+with enclosing quote-creation transactions. The migration seeds counters from
+existing numeric `QT-` suffixes. New quotes must use the allocator; arbitrary
+manual inserts do not advance allocation state. The migration also installs a
+trigger rejecting changes to persisted `quotes.quote_number` values.

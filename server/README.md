@@ -569,6 +569,30 @@ They do not claim coverage of future Quote, Invoice, or Receipt HTTP endpoints;
 those request schemas and routes must preserve these rules when implemented.
 Run `python -m unittest tests.test_financial_tampering -v` for the focused checks.
 
+## Quote numbering
+
+Task 6.1 adds `next_quote_number(connection, *, user_id)` in
+`app/common/numbering.py`. Each user starts at `QT-0001`; four digits are a minimum
+width, so allocation continues as `QT-10000` and beyond. An atomic PostgreSQL
+upsert increments that user's persistent counter. Concurrent allocations for the
+same user serialize on the counter row; other users have independent sequences.
+
+Migration `002_quote_numbering.sql` adds the internal counter table, seeds it from
+the largest existing numeric `QT-` suffix per user, and adds a trigger preventing
+changes to stored quote numbers. The existing `(user_id, quote_number)` uniqueness
+constraint remains the final duplicate safeguard. Deleting a quote does not reset
+the counter. Legacy nonnumeric numbers are preserved and excluded from seeding.
+
+Call the allocator inside the same transaction that creates the quote and items;
+rollback then restores the allocation too. A standalone call commits its allocation
+and can leave a gap if unused. Always allocate through this helper for new quotes;
+manual inserts do not advance counters. Exhausting the signed BIGINT sequence
+returns `QUOTE_NUMBER_EXHAUSTED` (409). Apply pending migrations with
+`python -m app.db migrate` before using the allocator in the application database.
+
+Run `python -m unittest tests.test_quote_numbering tests.test_database -v` for
+concurrency, independent users, rollback, deletion, immutability, and upgrade tests.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
