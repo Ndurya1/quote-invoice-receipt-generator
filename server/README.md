@@ -355,6 +355,24 @@ and pagination will be added in their respective tasks.
 Run `python -m unittest tests.test_client_queries -v` for PostgreSQL-backed
 ownership isolation, row mapping, list ordering, and missing-client checks.
 
+## Client creation
+
+Task 4.3 adds `POST /api/v1/clients` with access bearer authentication. Supply a
+required `name` and optional nullable `email`, `phone`, and `address`. Name is
+trimmed and limited to 1–160 characters; email is validated and limited to 255
+characters; phone is text limited to 30 characters. Duplicate emails are allowed.
+Unknown and server-managed fields are rejected with 422 `VALIDATION_ERROR`.
+
+The route passes the verified user's ID and `ClientCreate` input to
+`create_client()`. The service inserts the row in a transaction using parameterized
+SQL; PostgreSQL generates the UUID and timestamps. Success returns HTTP 201 with
+the stored client inside `data` and `Cache-Control: no-store`. Missing or invalid
+authentication returns 401. A business profile is not required to create clients.
+
+Run `python -m unittest tests.test_client_creation tests.test_client_queries -v`
+for PostgreSQL-backed creation, validation, duplicate-email, ownership, authentication,
+and transaction rollback checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type

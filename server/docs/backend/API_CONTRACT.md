@@ -199,6 +199,18 @@ Endpoints:
 
 ### Create Client
 
+`POST /api/v1/clients` requires an access bearer token. The owner is assigned
+from authentication. Success returns HTTP 201 with the stored client in `data`:
+`id`, `user_id`, `name`, `email`, `phone`, `address`, `created_at`, and `updated_at`.
+The response includes `Cache-Control: no-store`.
+
+Name is required, trimmed, and must contain 1–160 characters. Email, phone, and
+address are optional and nullable. Email must be valid and at most 255 characters;
+phone is text of at most 30 characters. Duplicate client emails are allowed.
+Unknown or server-managed fields (`id`, `user_id`, timestamps) are rejected with
+422 `VALIDATION_ERROR`, as are invalid editable values. Invalid authentication
+returns 401 `AUTHENTICATION_REQUIRED`. Creation does not require a business profile.
+
 Request:
 
 ```json

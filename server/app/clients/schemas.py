@@ -1,0 +1,23 @@
+"""Client creation input and public response envelope."""
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from app.clients.models import Client
+
+
+class ClientCreate(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    name: str = Field(min_length=1, max_length=160)
+    email: EmailStr | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=30)
+    address: str | None = None
+
+    @field_validator('name', mode='before')
+    @classmethod
+    def trim_name(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
+class ClientResponse(BaseModel):
+    data: Client
