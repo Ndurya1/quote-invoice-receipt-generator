@@ -516,6 +516,24 @@ amount exceeding `999999999999.99` raises `TAX_AMOUNT_OUT_OF_RANGE` (422).
 Zero tax returns `Decimal('0.00')`. Run `python -m unittest tests.test_tax -v` for
 percentage arithmetic, precision, rounding, defaults, and overflow checks.
 
+## Discount calculation
+
+Task 5.6 adds `calculate_discount_amount(subtotal, discount_type=DiscountType.NONE,
+discount_value=Decimal('0'), *, tax_amount=Decimal('0'))`. Supply backend-derived
+subtotal and tax amounts, an actual `DiscountType` enum, and Decimal values.
+All amounts and the discount value must fit nonnegative `NUMERIC(14,2)`.
+
+NONE requires a zero value and returns `0.00`. PERCENTAGE accepts 0–100 inclusive
+and applies to the subtotal, rounding once to two places with `ROUND_HALF_UP`.
+FIXED uses the supplied value. A discount may equal subtotal plus tax but may not
+exceed it; violations return `INVALID_DISCOUNT` (422). Fixed discounts may exceed
+the subtotal when tax covers the difference. Invalid subtotal/tax inputs return
+`INVALID_SUBTOTAL`/`INVALID_TAX_AMOUNT` (422). The helper isolates Decimal settings
+and returns a two-place Decimal. Final-total orchestration remains task 5.7.
+
+Run `python -m unittest tests.test_discount -v` for modes, precision, rounding,
+percentage limits, nonnegative-final-total enforcement, and context isolation.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
