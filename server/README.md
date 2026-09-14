@@ -337,6 +337,20 @@ refreshes `updated_at` on each update. No profile selection comes from the body.
 Run `python -m unittest tests.test_business_profile_put tests.test_business_profile_read -v`
 for creation, replacement, validation, ownership, authentication, and rollback checks.
 
+## Client model
+
+Task 4.1 adds `app/clients/models.py`: an immutable typed row containing the client
+UUID, owner UUID, required name, nullable email/phone/address, and timestamps.
+The existing initial migration supplies generated UUIDs and UTC timestamps,
+requires an existing owner and a non-null name of at most 160 characters, and
+provides indexes on `user_id` and `(user_id, name)`. Client emails may be repeated
+within an account or across accounts. No new migration is needed.
+
+This is a persisted-row model. Request validation and API endpoints are later
+tasks; task 4.2 adds user-scoped queries. Run
+`python -m unittest tests.test_clients -v` for PostgreSQL persistence and constraint
+checks, including duplicate emails and the documented indexes.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
