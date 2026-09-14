@@ -486,6 +486,21 @@ from changing the result. Subtotals, tax, and discounts are later tasks.
 Run `python -m unittest tests.test_line_total tests.test_line_items -v` for exact
 arithmetic, rounding, zero-price, range, and context-isolation checks.
 
+## Subtotal calculation
+
+Task 5.4 adds `calculate_subtotal(items)` to `app/common/calculations.py`.
+It accepts an iterable of validated `LineItemInput` objects, derives each line
+total with `calculate_line_total()`, and sums those rounded values using Decimal.
+For example, two lines that each round from `0.005` to `0.01` produce a subtotal
+of `0.02`. The helper does not sum unrounded products or accept submitted totals.
+
+An empty iterable returns `Decimal('0.00')`; requiring nonempty document items
+belongs to later request-validation tasks. A subtotal above `999999999999.99`
+raises `SUBTOTAL_OUT_OF_RANGE` (422), while an overflowing individual line retains
+`LINE_TOTAL_OUT_OF_RANGE`. The local Decimal context isolates arithmetic from
+caller settings. Run `python -m unittest tests.test_subtotal tests.test_line_total -v`
+for rounding consistency, exact sums, empty/generator input, and overflow checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
