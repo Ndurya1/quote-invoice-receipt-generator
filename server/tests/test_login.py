@@ -179,4 +179,4 @@ class LoginTests(unittest.TestCase):
         paths = self.client.get("/openapi.json").json()["paths"]
         self.assertIn("200", paths["/api/v1/auth/login"]["post"]["responses"])
         self.assertIn("/api/v1/auth/refresh", paths)
-        self.assertNotIn("/api/v1/auth/me", paths)
+        self.assertIn("/api/v1/auth/me", paths)

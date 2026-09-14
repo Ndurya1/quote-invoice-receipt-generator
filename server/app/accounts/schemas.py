@@ -66,6 +66,10 @@ class RegistrationResponse(BaseModel):
     data: UserResponse
 
 
+class CurrentUserResponse(BaseModel):
+    data: UserResponse
+
+
 class LoginRequest(BaseModel):
     email: EmailStr = Field(max_length=255)
     password: str = Field(exclude=True, repr=False)
