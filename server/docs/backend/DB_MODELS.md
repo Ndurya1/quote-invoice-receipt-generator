@@ -416,3 +416,13 @@ with enclosing quote-creation transactions. The migration seeds counters from
 existing numeric `QT-` suffixes. New quotes must use the allocator; arbitrary
 manual inserts do not advance allocation state. The migration also installs a
 trigger rejecting changes to persisted `quotes.quote_number` values.
+
+## Internal Invoice Number Allocation (Task 6.2)
+
+Migration `003_invoice_numbering.sql` adds `invoice_number_counters` with `user_id`
+as UUID primary key referencing users with ON DELETE RESTRICT, and positive
+non-null BIGINT `last_number`. Invoice counters are independent of Quote counters.
+Atomic upserts allocate suffixes transactionally and counters survive invoice
+deletion. Existing numeric `INV-` suffixes seed the counters during migration.
+New invoices must use the allocator; manual inserts do not advance counters.
+A trigger rejects changes to persisted `invoices.invoice_number` values.

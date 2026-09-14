@@ -76,14 +76,14 @@ class PostgreSQLMigrationTests(unittest.TestCase):
         self.connection.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(self.schema)))
 
     def test_fresh_migration_and_repeat(self):
-        self.assertEqual(apply_migrations(self.connection), ["001_initial.sql", "002_quote_numbering.sql"])
+        self.assertEqual(apply_migrations(self.connection), sorted(p.name for p in MIGRATIONS_DIRECTORY.glob('*.sql')))
         self.assertEqual(apply_migrations(self.connection), [])
         tables = self.connection.execute(
             "SELECT table_name FROM information_schema.tables WHERE table_schema = %s", (self.schema,)
         ).fetchall()
         self.assertEqual({row[0] for row in tables}, {
             "users", "business_profiles", "clients", "quotes", "quote_items", "invoices",
-            "invoice_items", "receipts", "receipt_items", "schema_migrations", "quote_number_counters",
+            "invoice_items", "receipts", "receipt_items", "schema_migrations", "quote_number_counters", "invoice_number_counters",
         })
         self.assertEqual(self.connection.execute("SHOW timezone").fetchone()[0], "UTC")
         self.assertEqual(self.connection.execute(
@@ -113,15 +113,15 @@ class PostgreSQLMigrationTests(unittest.TestCase):
             directory = Path(temp)
             for migration in MIGRATIONS_DIRECTORY.glob('*.sql'):
                 (directory / migration.name).write_text(migration.read_text(encoding='utf-8'), encoding='utf-8')
-            (directory / "003_probe.sql").write_text("CREATE TABLE rollback_probe (id INTEGER);", encoding="utf-8")
-            broken = directory / "004_failure.sql"
+            (directory / "900_probe.sql").write_text("CREATE TABLE rollback_probe (id INTEGER);", encoding="utf-8")
+            broken = directory / "901_failure.sql"
             broken.write_text("SELECT * FROM missing_migration_table;", encoding="utf-8")
             with self.assertRaises(psycopg.errors.UndefinedTable):
                 apply_migrations(self.connection, directory)
             self.assertIsNone(self.connection.execute("SELECT to_regclass('rollback_probe')").fetchone()[0])
-            self.assertEqual(self.connection.execute("SELECT count(*) FROM schema_migrations").fetchone()[0], 2)
+            self.assertEqual(self.connection.execute("SELECT count(*) FROM schema_migrations").fetchone()[0], len(list(MIGRATIONS_DIRECTORY.glob('*.sql'))))
             broken.write_text("CREATE TABLE retry_probe (id INTEGER);", encoding="utf-8")
-            self.assertEqual(apply_migrations(self.connection, directory), ["003_probe.sql", "004_failure.sql"])
+            self.assertEqual(apply_migrations(self.connection, directory), ["900_probe.sql", "901_failure.sql"])
 
     def test_applied_migration_edits_are_rejected(self):
         apply_migrations(self.connection)
@@ -130,4 +130,4 @@ class PostgreSQLMigrationTests(unittest.TestCase):
             (directory / "001_initial.sql").write_text("SELECT 1;", encoding="utf-8")
             with self.assertRaises(MigrationError):
                 apply_migrations(self.connection, directory)
-        self.assertEqual(self.connection.execute("SELECT count(*) FROM schema_migrations").fetchone()[0], 2)
+        self.assertEqual(self.connection.execute("SELECT count(*) FROM schema_migrations").fetchone()[0], len(list(MIGRATIONS_DIRECTORY.glob('*.sql'))))

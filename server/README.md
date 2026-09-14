@@ -593,6 +593,26 @@ returns `QUOTE_NUMBER_EXHAUSTED` (409). Apply pending migrations with
 Run `python -m unittest tests.test_quote_numbering tests.test_database -v` for
 concurrency, independent users, rollback, deletion, immutability, and upgrade tests.
 
+## Invoice numbering
+
+Task 6.2 adds `next_invoice_number(connection, *, user_id)` alongside Quote
+numbering. Each user has an independent sequence beginning at `INV-0001`, with
+minimum four-digit padding. Invoice allocations do not advance Quote counters.
+Atomic counter upserts serialize concurrent allocations for the same user.
+
+Migration `003_invoice_numbering.sql` creates `invoice_number_counters`, seeds
+it from existing numeric `INV-` suffixes, and prevents changes to persisted invoice
+numbers. Deleting invoices does not reuse committed allocations. Call the helper
+inside invoice creation's transaction so failures roll back both document and
+allocation; standalone allocations commit and may leave gaps if unused. Manual
+inserts do not advance counters. Sequence exhaustion returns
+`INVOICE_NUMBER_EXHAUSTED` (409).
+
+Apply pending migrations with `python -m app.db migrate` before using this helper
+in the application database. Run
+`python -m unittest tests.test_invoice_numbering tests.test_quote_numbering tests.test_database -v`
+for concurrency, rollback, upgrades, immutability, and independent-sequence checks.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
