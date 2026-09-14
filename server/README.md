@@ -663,6 +663,24 @@ services must use shared input validation and authoritative totals before storag
 Run `python -m unittest tests.test_quote_items tests.test_quotes -v` for row mapping,
 database constraints, precision, scoped cascade behavior, and rollback checks.
 
+## Quote creation validation
+
+Task 7.3 adds `QuoteCreate` in `app/quotes/schemas.py`. Client UUID, issue date,
+currency, and a nonempty item list are required. Expiry is nullable and cannot
+precede issue date. Notes and terms are nullable; tax defaults to zero, discount
+type to NONE, and discount value to zero. Currency and nested items reuse shared
+validators. Tax fits NUMERIC(6,3); discount value fits NUMERIC(14,2). NONE requires
+zero value, and percentage discounts cannot exceed 100.
+
+Unknown/server-managed fields are rejected, including owner, number, status,
+timestamps, and all computed totals. `validate_quote_create()` in
+`app/quotes/validation.py` accepts the parsed request and authenticated owner ID,
+checks the user-scoped client query, and derives validated totals using the shared
+service. Missing and foreign clients return `CLIENT_NOT_FOUND` (404); financial
+errors propagate from the shared calculator. The function returns `DocumentTotals`
+without allocating numbers or writing rows. Creation and HTTP routing remain
+tasks 7.4 and 7.5. Run `python -m unittest tests.test_quote_validation -v`.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
