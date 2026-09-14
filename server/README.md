@@ -633,6 +633,21 @@ row removal; it does not decide or implement the deferred Receipt deletion API.
 Run `python -m unittest tests.test_receipt_numbering tests.test_invoice_numbering tests.test_quote_numbering tests.test_database -v`
 for all numbering and database checks.
 
+## Quote model
+
+Task 7.1 adds `Quote` and `QuoteStatus` in `app/quotes/models.py`. The immutable
+row model includes UUID ownership/client references, number, dates, currency,
+Decimal financial fields, status, notes/terms, and timestamps. It reuses the
+shared `DiscountType` enum. Quote statuses are DRAFT, SENT, ACCEPTED, REJECTED,
+EXPIRED, and CONVERTED, matching PostgreSQL.
+
+The existing table supplies defaults and enforces foreign keys, per-user number
+uniqueness, nonnegative financial values, and expiry on or after issue date.
+Documented indexes already exist, so this task needs no migration. This row model
+does not authorize client ownership, compute totals, or enforce status transitions;
+those rules belong to later request/service tasks. QuoteItem is task 7.2.
+Run `python -m unittest tests.test_quotes -v` for PostgreSQL mapping and constraints.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
