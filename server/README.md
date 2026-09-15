@@ -700,6 +700,22 @@ than unchecked model construction or mutation.
 Run `python -m unittest tests.test_quote_creation -v` for persistence, rejected
 ownership/finances, forced later-item failure, outer rollback, and concurrent creation.
 
+## Quote creation endpoint
+
+Task 7.5 exposes `POST /api/v1/quotes` with access bearer authentication. The route
+parses `QuoteCreate`, obtains ownership from `get_current_user()`, and calls the
+atomic creation service. Success returns HTTP 201 with `data` containing the
+stored Quote fields and an `items` array of stored QuoteItems in request order.
+UUIDs/dates are JSON strings, financial Decimals remain strings, status is DRAFT,
+and the number is generated server-side. Responses use `Cache-Control: no-store`.
+
+Invalid input and submitted computed/server-managed fields return 422; missing
+or foreign clients return 404 `CLIENT_NOT_FOUND`; invalid authentication returns
+401. Unexpected persistence failures return a generic 500 after rollback. The
+endpoint adds no migration. Quote read/update endpoints remain later tasks.
+Run `python -m unittest tests.test_quote_endpoint tests.test_quote_creation -v`
+for HTTP behavior and transactional persistence tests.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type

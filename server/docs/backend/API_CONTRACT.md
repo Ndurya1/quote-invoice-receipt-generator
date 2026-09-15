@@ -296,6 +296,17 @@ Endpoints:
 
 ### Create Quote
 
+`POST /api/v1/quotes` requires an access bearer token. Success returns HTTP 201
+with the persisted Quote and its items inside `data`, including owner UUID,
+notes, terms, and timestamps in addition to the fields in the example below.
+Each item includes its generated UUID, quote UUID, description, quantity, unit
+price, calculated line total, and position. Items retain request order.
+Monetary amounts are decimal strings. Responses use `Cache-Control: no-store`.
+Client ownership is resolved from authentication. Missing/foreign clients return
+404 `CLIENT_NOT_FOUND`; invalid input or server-managed fields return 422;
+invalid authentication returns 401. Failed creation rolls back the Quote, items,
+and number allocation together.
+
 Request:
 
 ```json

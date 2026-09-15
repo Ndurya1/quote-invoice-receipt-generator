@@ -9,6 +9,15 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.common.currency import CurrencyCode
 from app.common.enums import DiscountType
 from app.common.line_items import LineItemInput
+from app.quotes.models import Quote, QuoteItem
+
+
+class QuoteDetail(Quote):
+    items: tuple[QuoteItem, ...]
+
+
+class QuoteResponse(BaseModel):
+    data: QuoteDetail
 
 
 class QuoteCreate(BaseModel):
