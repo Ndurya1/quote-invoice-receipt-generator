@@ -1,0 +1,23 @@
+"""Read-only ownership and financial checks before Invoice creation."""
+
+from uuid import UUID
+
+from psycopg import Connection
+
+from app.clients.queries import get_client_for_user
+from app.common.errors import DomainError
+from app.common.totals import DocumentTotals, calculate_document_totals
+from app.invoices.schemas import InvoiceCreate
+
+
+def validate_invoice_create(
+    connection: Connection, *, user_id: UUID, payload: InvoiceCreate,
+) -> DocumentTotals:
+    """Use an authenticated owner ID and parsed request; allocate or persist nothing."""
+    client = get_client_for_user(connection, user_id=user_id, client_id=payload.client_id)
+    if client is None:
+        raise DomainError('CLIENT_NOT_FOUND', 'Client not found.', status_code=404)
+    return calculate_document_totals(
+        payload.items, tax_rate=payload.tax_rate, discount_type=payload.discount_type,
+        discount_value=payload.discount_value,
+    )
