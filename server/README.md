@@ -633,6 +633,89 @@ row removal; it does not decide or implement the deferred Receipt deletion API.
 Run `python -m unittest tests.test_receipt_numbering tests.test_invoice_numbering tests.test_quote_numbering tests.test_database -v`
 for all numbering and database checks.
 
+## Quote model
+
+Task 7.1 adds `Quote` and `QuoteStatus` in `app/quotes/models.py`. The immutable
+row model includes UUID ownership/client references, number, dates, currency,
+Decimal financial fields, status, notes/terms, and timestamps. It reuses the
+shared `DiscountType` enum. Quote statuses are DRAFT, SENT, ACCEPTED, REJECTED,
+EXPIRED, and CONVERTED, matching PostgreSQL.
+
+The existing table supplies defaults and enforces foreign keys, per-user number
+uniqueness, nonnegative financial values, and expiry on or after issue date.
+Documented indexes already exist, so this task needs no migration. This row model
+does not authorize client ownership, compute totals, or enforce status transitions;
+those rules belong to later request/service tasks. QuoteItem is task 7.2.
+Run `python -m unittest tests.test_quotes -v` for PostgreSQL mapping and constraints.
+
+## Quote item model
+
+Task 7.2 adds immutable `QuoteItem` rows in `app/quotes/models.py`, containing
+UUID, quote UUID, description, Decimal quantity/unit price/line total, and position.
+The existing table enforces positive quantity, nonnegative prices/totals, required
+fields, and a valid parent. Quantity uses NUMERIC(12,3); price and total use
+NUMERIC(14,2). Position defaults to zero. The parent index and ON DELETE CASCADE
+already exist, so no migration is needed.
+
+Deleting a quote removes its own items, leaving other quotes and items intact.
+The model does not authorize parent deletion or calculate amounts. Later creation
+services must use shared input validation and authoritative totals before storage.
+Run `python -m unittest tests.test_quote_items tests.test_quotes -v` for row mapping,
+database constraints, precision, scoped cascade behavior, and rollback checks.
+
+## Quote creation validation
+
+Task 7.3 adds `QuoteCreate` in `app/quotes/schemas.py`. Client UUID, issue date,
+currency, and a nonempty item list are required. Expiry is nullable and cannot
+precede issue date. Notes and terms are nullable; tax defaults to zero, discount
+type to NONE, and discount value to zero. Currency and nested items reuse shared
+validators. Tax fits NUMERIC(6,3); discount value fits NUMERIC(14,2). NONE requires
+zero value, and percentage discounts cannot exceed 100.
+
+Unknown/server-managed fields are rejected, including owner, number, status,
+timestamps, and all computed totals. `validate_quote_create()` in
+`app/quotes/validation.py` accepts the parsed request and authenticated owner ID,
+checks the user-scoped client query, and derives validated totals using the shared
+service. Missing and foreign clients return `CLIENT_NOT_FOUND` (404); financial
+errors propagate from the shared calculator. The function returns `DocumentTotals`
+without allocating numbers or writing rows. Creation and HTTP routing remain
+tasks 7.4 and 7.5. Run `python -m unittest tests.test_quote_validation -v`.
+
+## Atomic Quote creation
+
+Task 7.4 adds `create_quote(connection, *, user_id, payload)` in
+`app/quotes/service.py`. Pass the authenticated user's UUID and a parsed
+`QuoteCreate`. One transaction validates client ownership and derives shared
+totals, allocates the Quote number, inserts the Quote, and inserts every item.
+The database supplies UUIDs, timestamps, and DRAFT status. Calculated amounts
+are persisted from `DocumentTotals`; supplied item positions are retained.
+
+The immutable `CreatedQuote` result contains the stored `Quote` and a tuple of
+stored `QuoteItem` objects in request order. A failure rolls back the parent,
+all items, and number allocation. The service respects an enclosing transaction,
+so outer rollback also undoes creation. It adds no HTTP route or migration;
+the creation endpoint remains task 7.5. Callers must use validated input rather
+than unchecked model construction or mutation.
+
+Run `python -m unittest tests.test_quote_creation -v` for persistence, rejected
+ownership/finances, forced later-item failure, outer rollback, and concurrent creation.
+
+## Quote creation endpoint
+
+Task 7.5 exposes `POST /api/v1/quotes` with access bearer authentication. The route
+parses `QuoteCreate`, obtains ownership from `get_current_user()`, and calls the
+atomic creation service. Success returns HTTP 201 with `data` containing the
+stored Quote fields and an `items` array of stored QuoteItems in request order.
+UUIDs/dates are JSON strings, financial Decimals remain strings, status is DRAFT,
+and the number is generated server-side. Responses use `Cache-Control: no-store`.
+
+Invalid input and submitted computed/server-managed fields return 422; missing
+or foreign clients return 404 `CLIENT_NOT_FOUND`; invalid authentication returns
+401. Unexpected persistence failures return a generic 500 after rollback. The
+endpoint adds no migration. Quote read/update endpoints remain later tasks.
+Run `python -m unittest tests.test_quote_endpoint tests.test_quote_creation -v`
+for HTTP behavior and transactional persistence tests.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
