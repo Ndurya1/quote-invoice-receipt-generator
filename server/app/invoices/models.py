@@ -41,3 +41,17 @@ class Invoice(BaseModel):
     terms: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class InvoiceItem(BaseModel):
+    """Persisted line item; calculation and request validation happen before storage."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: UUID
+    invoice_id: UUID
+    description: str
+    quantity: Decimal
+    unit_price: Decimal
+    line_total: Decimal
+    position: int
