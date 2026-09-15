@@ -681,6 +681,25 @@ errors propagate from the shared calculator. The function returns `DocumentTotal
 without allocating numbers or writing rows. Creation and HTTP routing remain
 tasks 7.4 and 7.5. Run `python -m unittest tests.test_quote_validation -v`.
 
+## Atomic Quote creation
+
+Task 7.4 adds `create_quote(connection, *, user_id, payload)` in
+`app/quotes/service.py`. Pass the authenticated user's UUID and a parsed
+`QuoteCreate`. One transaction validates client ownership and derives shared
+totals, allocates the Quote number, inserts the Quote, and inserts every item.
+The database supplies UUIDs, timestamps, and DRAFT status. Calculated amounts
+are persisted from `DocumentTotals`; supplied item positions are retained.
+
+The immutable `CreatedQuote` result contains the stored `Quote` and a tuple of
+stored `QuoteItem` objects in request order. A failure rolls back the parent,
+all items, and number allocation. The service respects an enclosing transaction,
+so outer rollback also undoes creation. It adds no HTTP route or migration;
+the creation endpoint remains task 7.5. Callers must use validated input rather
+than unchecked model construction or mutation.
+
+Run `python -m unittest tests.test_quote_creation -v` for persistence, rejected
+ownership/finances, forced later-item failure, outer rollback, and concurrent creation.
+
 ## Currency-code validation
 
 Task 3.2 adds `validate_currency_code(value)` and the Pydantic `CurrencyCode` type
