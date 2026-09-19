@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from psycopg import Connection
+from psycopg import Connection, errors
 from psycopg.rows import class_row
 from pydantic import ValidationError
 
@@ -118,3 +118,21 @@ def update_quote(
             connection.execute('DELETE FROM quote_items WHERE quote_id = %s', (quote_id,))
             items = _insert_items(connection, quote_id=quote_id, totals=totals)
         return CreatedQuote(quote, tuple(sorted(items, key=lambda item: (item.position, item.id))))
+
+
+def delete_quote(connection: Connection, *, user_id: UUID, quote_id: UUID) -> None:
+    """Delete only an owned, unlinked draft; its own items cascade in the transaction."""
+    try:
+        with connection.transaction():
+            _get_mutable_quote(connection, user_id=user_id, quote_id=quote_id)
+            deleted = connection.execute(
+                'DELETE FROM quotes WHERE user_id = %s AND id = %s RETURNING id',
+                (user_id, quote_id),
+            ).fetchone()
+            if deleted is None:
+                raise RuntimeError('Quote deletion returned no row')
+    except (errors.ForeignKeyViolation, errors.RestrictViolation) as exc:
+        if exc.diag.constraint_name != 'invoices_source_quote_id_fkey':
+            raise
+        raise DomainError('INVALID_QUOTE_STATUS', 'Invoice-linked quotes cannot be deleted.',
+                          status_code=409) from None

@@ -4,7 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from psycopg import Connection
 
 from app.accounts.dependencies import get_current_user
@@ -14,9 +14,19 @@ from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
 from app.quotes.queries import get_quote_for_user, paginate_quotes_for_user
 from app.quotes.schemas import QuoteCreate, QuoteDetail, QuoteListResponse, QuotePatch, QuoteResponse
-from app.quotes.service import create_quote, update_quote
+from app.quotes.service import create_quote, delete_quote, update_quote
 
 router = APIRouter(prefix='/quotes', tags=['quotes'])
+
+
+@router.delete('/{quote_id}', status_code=204, response_class=Response)
+def remove_quote(
+    quote_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> Response:
+    delete_quote(connection, user_id=user.id, quote_id=quote_id)
+    return Response(status_code=204, headers={'Cache-Control': 'no-store'})
 
 
 @router.patch('/{quote_id}', response_model=QuoteResponse)

@@ -294,6 +294,17 @@ Endpoints:
 - `POST /api/v1/quotes/{quote_id}/convert`
 - `GET /api/v1/quotes/{quote_id}/pdf`
 
+### Delete Quote (Task 8.6)
+
+`DELETE /api/v1/quotes/{quote_id}` requires access bearer authentication.
+Only DRAFT quotes without an invoice reference may be deleted. SENT, ACCEPTED,
+REJECTED, EXPIRED and CONVERTED return 409 `INVALID_QUOTE_STATUS`; invoice-linked
+drafts return the same code. The server locks the quote before checking policy.
+Successful deletion atomically removes the quote and its own items, returning
+204 with no body. Missing/foreign/already-deleted quotes return 404
+`QUOTE_NOT_FOUND`; malformed UUIDs return 422. Numbers are never reused.
+Other documents, clients, and number counters are preserved.
+
 ### Update Quote (Task 8.5)
 
 `PATCH /api/v1/quotes/{quote_id}` requires access bearer authentication. Only

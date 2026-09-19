@@ -40,11 +40,13 @@ def get_quote_for_user(
     connection: Connection, *, user_id: UUID, quote_id: UUID, for_update: bool = False,
 ) -> LoadedQuote | None:
     """Use for_update only inside the caller's mutation transaction."""
-    with connection.cursor(row_factory=class_row(Quote)) as cursor:
-        cursor.execute('SELECT * FROM quotes WHERE user_id = %s AND id = %s'
-                       + (' FOR UPDATE' if for_update else ''), (user_id, quote_id))
-        quote = cursor.fetchone()
-    return _load_related(connection, user_id=user_id, quotes=[quote])[0] if quote else None
+    # Keep parent fields and items from the same version while edits/deletes run.
+    with connection.transaction():
+        with connection.cursor(row_factory=class_row(Quote)) as cursor:
+            cursor.execute('SELECT * FROM quotes WHERE user_id = %s AND id = %s'
+                           + (' FOR UPDATE' if for_update else ' FOR SHARE'), (user_id, quote_id))
+            quote = cursor.fetchone()
+        return _load_related(connection, user_id=user_id, quotes=[quote])[0] if quote else None
 
 
 def paginate_quotes_for_user(
@@ -54,9 +56,10 @@ def paginate_quotes_for_user(
         raise ValueError('Invalid quote pagination bounds')
     total = connection.execute('SELECT count(*) FROM quotes WHERE user_id = %s',
                                (user_id,)).fetchone()[0]
-    with connection.cursor(row_factory=class_row(Quote)) as cursor:
-        cursor.execute('SELECT * FROM quotes WHERE user_id = %s '
-                       'ORDER BY created_at DESC, id DESC LIMIT %s OFFSET %s',
-                       (user_id, page_size, (page - 1) * page_size))
-        quotes = cursor.fetchall()
-    return _load_related(connection, user_id=user_id, quotes=quotes), total
+    with connection.transaction():
+        with connection.cursor(row_factory=class_row(Quote)) as cursor:
+            cursor.execute('SELECT * FROM quotes WHERE user_id = %s '
+                           'ORDER BY created_at DESC, id DESC LIMIT %s OFFSET %s FOR SHARE',
+                           (user_id, page_size, (page - 1) * page_size))
+            quotes = cursor.fetchall()
+        return _load_related(connection, user_id=user_id, quotes=quotes), total
