@@ -20,6 +20,17 @@ class QuoteResponse(BaseModel):
     data: QuoteDetail
 
 
+class QuotePageMeta(BaseModel):
+    page: int
+    page_size: int
+    total: int
+
+
+class QuoteListResponse(BaseModel):
+    data: list[QuoteDetail]
+    meta: QuotePageMeta
+
+
 class QuoteCreate(BaseModel):
     model_config = ConfigDict(extra='forbid')
 

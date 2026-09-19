@@ -294,6 +294,18 @@ Endpoints:
 - `POST /api/v1/quotes/{quote_id}/convert`
 - `GET /api/v1/quotes/{quote_id}/pdf`
 
+### List Quotes (Task 8.2)
+
+`GET /api/v1/quotes` requires access bearer authentication. Returns 200 with
+`data` containing persisted Quote fields and items, and `meta` containing
+`page`, `page_size`, and the total owned Quote count. Defaults: page 1, page_size
+20; page must be 1..2147483647 and page_size 1..100 (invalid values return 422).
+Results are ordered by created_at descending, then UUID descending. Items are
+ordered by position ascending, then UUID ascending. Empty/out-of-range pages
+return an empty array. Responses use `Cache-Control: no-store` and decimal
+strings. Only the authenticated owner's quotes are counted or returned.
+Filtering/search/sort parameters are deferred to Task 18.3.
+
 ### Create Quote
 
 `POST /api/v1/quotes` requires an access bearer token. Success returns HTTP 201

@@ -700,6 +700,14 @@ than unchecked model construction or mutation.
 Run `python -m unittest tests.test_quote_creation -v` for persistence, rejected
 ownership/finances, forced later-item failure, outer rollback, and concurrent creation.
 
+## Quote list endpoint
+
+Task 8.2 exposes authenticated `GET /api/v1/quotes?page=1&page_size=20`.
+The query layer limits and counts only your quotes, newest first (UUID breaks
+timestamp ties), and batch-loads clients and items. The response contains stored
+quote fields/items plus page metadata; amounts remain decimal strings. Maximum
+page size is 100. Run `python -m unittest tests.test_quote_list tests.test_quote_queries -v`.
+
 ## Quote creation endpoint
 
 Task 7.5 exposes `POST /api/v1/quotes` with access bearer authentication. The route
