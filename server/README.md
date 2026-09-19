@@ -700,6 +700,15 @@ than unchecked model construction or mutation.
 Run `python -m unittest tests.test_quote_creation -v` for persistence, rejected
 ownership/finances, forced later-item failure, outer rollback, and concurrent creation.
 
+## Quote PATCH endpoint
+
+Task 8.5 exposes authenticated `PATCH /api/v1/quotes/{quote_id}` through the edit
+service. Success returns the persisted quote/items with decimal strings and
+`Cache-Control: no-store`. The route uses the same 404 ownership boundary as
+detail reads, 409 for protected quotes, and 422 for invalid input or merged
+values. Changing currency relabels amounts without exchange-rate conversion.
+Run `python -m unittest tests.test_quote_patch tests.test_quote_update -v`.
+
 ## Quote edit service
 
 Task 8.4 adds `QuotePatch` and `update_quote()`. The service locks the owned row,

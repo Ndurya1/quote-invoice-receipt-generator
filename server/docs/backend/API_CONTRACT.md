@@ -294,6 +294,29 @@ Endpoints:
 - `POST /api/v1/quotes/{quote_id}/convert`
 - `GET /api/v1/quotes/{quote_id}/pdf`
 
+### Update Quote (Task 8.5)
+
+`PATCH /api/v1/quotes/{quote_id}` requires access bearer authentication. Only
+unlinked DRAFT quotes are editable. All other statuses (SENT, ACCEPTED, REJECTED,
+EXPIRED, CONVERTED), and DRAFT quotes referenced by invoices, return 409
+`INVALID_QUOTE_STATUS`. Missing/foreign quotes return 404 `QUOTE_NOT_FOUND`.
+
+Writable fields: client_id, issue_date, expiry_date, currency, tax_rate,
+discount_type, discount_value, notes, terms, items. Omitted fields retain saved
+values. Null clears only expiry_date, notes and terms. Empty PATCH is a no-op
+after ownership/state checks. Supplied items replace the entire collection with
+new item UUIDs; omitted items keep their UUIDs. Supplied items use creation's
+input shape and must be nonempty. Item IDs, owner, number, status, timestamps,
+unknown fields and computed amounts are rejected with 422.
+
+The merged document is validated (including dates and discounts), the client
+must belong to the caller (404 CLIENT_NOT_FOUND otherwise), and totals are
+recalculated. Quote and item changes are one transaction. Currency changes
+relabel the amounts; there is no FX conversion. Success returns 200 with the
+persisted Quote and position/UUID-ordered items inside `data`, decimal strings,
+and `Cache-Control: no-store`. Validation errors return 422. No source or
+destination documents are modified.
+
 ### Read Quote (Task 8.3)
 
 `GET /api/v1/quotes/{quote_id}` requires access bearer authentication and returns

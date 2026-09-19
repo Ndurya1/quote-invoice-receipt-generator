@@ -13,10 +13,23 @@ from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
 from app.quotes.queries import get_quote_for_user, paginate_quotes_for_user
-from app.quotes.schemas import QuoteCreate, QuoteDetail, QuoteListResponse, QuoteResponse
-from app.quotes.service import create_quote
+from app.quotes.schemas import QuoteCreate, QuoteDetail, QuoteListResponse, QuotePatch, QuoteResponse
+from app.quotes.service import create_quote, update_quote
 
 router = APIRouter(prefix='/quotes', tags=['quotes'])
+
+
+@router.patch('/{quote_id}', response_model=QuoteResponse)
+def patch_quote(
+    quote_id: UUID,
+    payload: QuotePatch,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    updated = update_quote(connection, user_id=user.id, quote_id=quote_id, payload=payload)
+    response = resource_response(QuoteDetail(**updated.quote.model_dump(), items=updated.items))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @router.get('/{quote_id}', response_model=QuoteResponse)
