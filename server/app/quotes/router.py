@@ -1,6 +1,7 @@
 """Authenticated Quote endpoints."""
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
@@ -9,12 +10,27 @@ from psycopg import Connection
 from app.accounts.dependencies import get_current_user
 from app.accounts.models import User
 from app.common.dependencies import get_database_connection
+from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
-from app.quotes.queries import paginate_quotes_for_user
+from app.quotes.queries import get_quote_for_user, paginate_quotes_for_user
 from app.quotes.schemas import QuoteCreate, QuoteDetail, QuoteListResponse, QuoteResponse
 from app.quotes.service import create_quote
 
 router = APIRouter(prefix='/quotes', tags=['quotes'])
+
+
+@router.get('/{quote_id}', response_model=QuoteResponse)
+def read_quote(
+    quote_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    loaded = get_quote_for_user(connection, user_id=user.id, quote_id=quote_id)
+    if loaded is None:
+        raise DomainError('QUOTE_NOT_FOUND', 'Quote not found.', status_code=404)
+    response = resource_response(QuoteDetail(**loaded.quote.model_dump(), items=loaded.items))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @router.get('', response_model=QuoteListResponse)

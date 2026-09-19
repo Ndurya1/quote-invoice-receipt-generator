@@ -294,6 +294,14 @@ Endpoints:
 - `POST /api/v1/quotes/{quote_id}/convert`
 - `GET /api/v1/quotes/{quote_id}/pdf`
 
+### Read Quote (Task 8.3)
+
+`GET /api/v1/quotes/{quote_id}` requires access bearer authentication and returns
+200 with persisted Quote fields and items inside `data`. Items are ordered by
+position then UUID ascending. Amounts remain decimal strings; no recalculation
+occurs on reads. Missing and foreign quotes return 404 `QUOTE_NOT_FOUND` with
+identical bodies. Malformed UUIDs return 422. Responses use `Cache-Control: no-store`.
+
 ### List Quotes (Task 8.2)
 
 `GET /api/v1/quotes` requires access bearer authentication. Returns 200 with

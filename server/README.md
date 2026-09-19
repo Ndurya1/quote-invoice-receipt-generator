@@ -700,6 +700,13 @@ than unchecked model construction or mutation.
 Run `python -m unittest tests.test_quote_creation -v` for persistence, rejected
 ownership/finances, forced later-item failure, outer rollback, and concurrent creation.
 
+## Quote detail endpoint
+
+Task 8.3 adds `GET /api/v1/quotes/{quote_id}`. It returns the saved quote and
+items in position/UUID order. Missing and foreign-owned IDs both produce
+`QUOTE_NOT_FOUND` (404). Reads return persisted totals without recalculating them.
+Run `python -m unittest tests.test_quote_detail -v`.
+
 ## Quote list endpoint
 
 Task 8.2 exposes authenticated `GET /api/v1/quotes?page=1&page_size=20`.
