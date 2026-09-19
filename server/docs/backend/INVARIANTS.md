@@ -182,6 +182,13 @@ Rules:
 - Conversion never deletes the original Quote.
 - The Quote remains available as historical data.
 
+Task 8 MVP edit/deletion policy: only DRAFT Quotes without an Invoice reference
+may be edited or hard-deleted. SENT, ACCEPTED, REJECTED, EXPIRED and CONVERTED
+Quotes reject both operations with 409 INVALID_QUOTE_STATUS. Status, ownership,
+number and computed totals cannot be supplied through PATCH. Updates validate
+the merged document and recalculate totals atomically; supplied items replace
+the whole item collection. Omitted items preserve their identities.
+
 ---
 
 ## 9. Quote → Invoice Conversion

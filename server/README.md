@@ -700,6 +700,20 @@ than unchecked model construction or mutation.
 Run `python -m unittest tests.test_quote_creation -v` for persistence, rejected
 ownership/finances, forced later-item failure, outer rollback, and concurrent creation.
 
+## Quote edit service
+
+Task 8.4 adds `QuotePatch` and `update_quote()`. The service locks the owned row,
+permits only an unlinked DRAFT, merges supplied fields with saved values, then
+reuses QuoteCreate validation and the shared calculator. For example, changing
+tax alone recalculates the total using saved items; changing issue date still
+checks saved expiry. Invalid merged values return 422 and foreign clients 404.
+
+Supplying items replaces all item rows; omitting items preserves their IDs.
+Quote changes and replacement items commit or roll back together. Owner, number,
+status and creation timestamp remain unchanged; the database updates updated_at.
+An empty PATCH does not write. Null clears only expiry, notes and terms.
+Run `python -m unittest tests.test_quote_update tests.test_quote_creation -v`.
+
 ## Quote detail endpoint
 
 Task 8.3 adds `GET /api/v1/quotes/{quote_id}`. It returns the saved quote and

@@ -4,7 +4,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.common.currency import CurrencyCode
 from app.common.enums import DiscountType
@@ -56,3 +56,30 @@ class QuoteCreate(BaseModel):
         if self.discount_type == DiscountType.PERCENTAGE and self.discount_value > 100:
             raise ValueError('Percentage discount cannot exceed 100')
         return self
+
+
+class QuotePatch(BaseModel):
+    """Omitted fields are preserved; cross-field validation follows the merge."""
+
+    model_config = ConfigDict(extra='forbid')
+
+    client_id: UUID | None = None
+    issue_date: date | None = None
+    expiry_date: date | None = None
+    currency: CurrencyCode | None = None
+    tax_rate: Decimal | None = Field(default=None, ge=0, max_digits=6,
+                                    decimal_places=3, allow_inf_nan=False)
+    discount_type: DiscountType | None = None
+    discount_value: Decimal | None = Field(default=None, ge=0, max_digits=14,
+                                          decimal_places=2, allow_inf_nan=False)
+    notes: str | None = None
+    terms: str | None = None
+    items: list[LineItemInput] | None = Field(default=None, min_length=1)
+
+    @field_validator('client_id', 'issue_date', 'currency', 'tax_rate',
+                     'discount_type', 'discount_value', 'items')
+    @classmethod
+    def reject_explicit_null(cls, value):
+        if value is None:
+            raise ValueError('Field cannot be null')
+        return value
