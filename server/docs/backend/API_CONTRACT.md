@@ -529,6 +529,20 @@ Request shape mirrors Quote creation but uses:
 
 Computed totals remain backend-authoritative.
 
+### Invoice Reads, Updates, and Deletion (Tasks 11.1–11.6)
+
+`GET /api/v1/invoices` returns an owner-scoped, newest-first collection using
+the standard `page` and `page_size` parameters and response metadata.
+`GET /api/v1/invoices/{invoice_id}` returns the persisted invoice and its
+items. Missing or foreign invoices return 404 `INVOICE_NOT_FOUND`.
+
+Only unlinked `DRAFT` invoices may be patched or deleted. Invoice number,
+owner, source quote, status, timestamps, and computed amounts are
+server-managed. PATCH merges editable fields and recalculates all totals.
+Non-draft or source-linked invoices return 409 `INVALID_INVOICE_STATUS`.
+Deleting an eligible invoice cascades its items; invoices referenced by a
+Receipt cannot be deleted and return the same conflict code.
+
 ---
 
 ## 9. Convert Invoice to Receipt
