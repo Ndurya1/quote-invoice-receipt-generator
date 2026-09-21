@@ -503,6 +503,14 @@ Conflict example:
 }
 ```
 
+Conversion is allowed only for an owned `ACCEPTED` Quote. `DRAFT`, `SENT`,
+`REJECTED`, `EXPIRED`, and `CONVERTED` Quotes return 409
+`INVALID_QUOTE_STATUS`; a Quote with an existing source Invoice returns 409
+`QUOTE_ALREADY_CONVERTED`. The new Invoice has independent IDs, number,
+items, and totals while preserving the Quote's owner, client, currency,
+notes, and terms. The operation is atomic: the Invoice, InvoiceItems, source
+link, number allocation, and Quote status change commit or roll back together.
+
 ---
 
 ## 8. Invoices
