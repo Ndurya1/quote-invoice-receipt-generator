@@ -700,6 +700,56 @@ than unchecked model construction or mutation.
 Run `python -m unittest tests.test_quote_creation -v` for persistence, rejected
 ownership/finances, forced later-item failure, outer rollback, and concurrent creation.
 
+## Quote deletion
+
+Task 8.6 adds authenticated `DELETE /api/v1/quotes/{quote_id}`. Only DRAFT
+quotes without an invoice link may be deleted. All other statuses return
+409 `INVALID_QUOTE_STATUS`; missing/foreign quotes return 404 `QUOTE_NOT_FOUND`.
+A transaction locks the quote and deletes it with its own cascading items.
+An item deletion failure restores the quote and items. Other documents and the
+number counter remain intact; successful deletion returns an empty 204 response.
+Read queries hold shared locks until quote fields and items are loaded, so
+concurrent edits/deletions cannot mix document versions in a response.
+Run `python -m unittest tests.test_quote_delete -v`.
+
+## Quote PATCH endpoint
+
+Task 8.5 exposes authenticated `PATCH /api/v1/quotes/{quote_id}` through the edit
+service. Success returns the persisted quote/items with decimal strings and
+`Cache-Control: no-store`. The route uses the same 404 ownership boundary as
+detail reads, 409 for protected quotes, and 422 for invalid input or merged
+values. Changing currency relabels amounts without exchange-rate conversion.
+Run `python -m unittest tests.test_quote_patch tests.test_quote_update -v`.
+
+## Quote edit service
+
+Task 8.4 adds `QuotePatch` and `update_quote()`. The service locks the owned row,
+permits only an unlinked DRAFT, merges supplied fields with saved values, then
+reuses QuoteCreate validation and the shared calculator. For example, changing
+tax alone recalculates the total using saved items; changing issue date still
+checks saved expiry. Invalid merged values return 422 and foreign clients 404.
+
+Supplying items replaces all item rows; omitting items preserves their IDs.
+Quote changes and replacement items commit or roll back together. Owner, number,
+status and creation timestamp remain unchanged; the database updates updated_at.
+An empty PATCH does not write. Null clears only expiry, notes and terms.
+Run `python -m unittest tests.test_quote_update tests.test_quote_creation -v`.
+
+## Quote detail endpoint
+
+Task 8.3 adds `GET /api/v1/quotes/{quote_id}`. It returns the saved quote and
+items in position/UUID order. Missing and foreign-owned IDs both produce
+`QUOTE_NOT_FOUND` (404). Reads return persisted totals without recalculating them.
+Run `python -m unittest tests.test_quote_detail -v`.
+
+## Quote list endpoint
+
+Task 8.2 exposes authenticated `GET /api/v1/quotes?page=1&page_size=20`.
+The query layer limits and counts only your quotes, newest first (UUID breaks
+timestamp ties), and batch-loads clients and items. The response contains stored
+quote fields/items plus page metadata; amounts remain decimal strings. Maximum
+page size is 100. Run `python -m unittest tests.test_quote_list tests.test_quote_queries -v`.
+
 ## Quote creation endpoint
 
 Task 7.5 exposes `POST /api/v1/quotes` with access bearer authentication. The route
@@ -712,7 +762,7 @@ and the number is generated server-side. Responses use `Cache-Control: no-store`
 Invalid input and submitted computed/server-managed fields return 422; missing
 or foreign clients return 404 `CLIENT_NOT_FOUND`; invalid authentication returns
 401. Unexpected persistence failures return a generic 500 after rollback. The
-endpoint adds no migration. Quote read/update endpoints remain later tasks.
+endpoint adds no migration. Task 8 adds the read/update/delete operations described above.
 Run `python -m unittest tests.test_quote_endpoint tests.test_quote_creation -v`
 for HTTP behavior and transactional persistence tests.
 

@@ -94,6 +94,6 @@ class QuoteEndpointTests(unittest.TestCase):
 
     def test_openapi_documents_authenticated_creation(self):
         path = self.client.get('/openapi.json').json()['paths']['/api/v1/quotes']
-        self.assertEqual(set(path), {'post'})
+        self.assertIn('post', path)
         self.assertEqual(path['post']['security'], [{'HTTPBearer': []}])
         self.assertIn('201', path['post']['responses'])

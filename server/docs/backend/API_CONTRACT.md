@@ -294,6 +294,60 @@ Endpoints:
 - `POST /api/v1/quotes/{quote_id}/convert`
 - `GET /api/v1/quotes/{quote_id}/pdf`
 
+### Delete Quote (Task 8.6)
+
+`DELETE /api/v1/quotes/{quote_id}` requires access bearer authentication.
+Only DRAFT quotes without an invoice reference may be deleted. SENT, ACCEPTED,
+REJECTED, EXPIRED and CONVERTED return 409 `INVALID_QUOTE_STATUS`; invoice-linked
+drafts return the same code. The server locks the quote before checking policy.
+Successful deletion atomically removes the quote and its own items, returning
+204 with no body. Missing/foreign/already-deleted quotes return 404
+`QUOTE_NOT_FOUND`; malformed UUIDs return 422. Numbers are never reused.
+Other documents, clients, and number counters are preserved.
+
+### Update Quote (Task 8.5)
+
+`PATCH /api/v1/quotes/{quote_id}` requires access bearer authentication. Only
+unlinked DRAFT quotes are editable. All other statuses (SENT, ACCEPTED, REJECTED,
+EXPIRED, CONVERTED), and DRAFT quotes referenced by invoices, return 409
+`INVALID_QUOTE_STATUS`. Missing/foreign quotes return 404 `QUOTE_NOT_FOUND`.
+
+Writable fields: client_id, issue_date, expiry_date, currency, tax_rate,
+discount_type, discount_value, notes, terms, items. Omitted fields retain saved
+values. Null clears only expiry_date, notes and terms. Empty PATCH is a no-op
+after ownership/state checks. Supplied items replace the entire collection with
+new item UUIDs; omitted items keep their UUIDs. Supplied items use creation's
+input shape and must be nonempty. Item IDs, owner, number, status, timestamps,
+unknown fields and computed amounts are rejected with 422.
+
+The merged document is validated (including dates and discounts), the client
+must belong to the caller (404 CLIENT_NOT_FOUND otherwise), and totals are
+recalculated. Quote and item changes are one transaction. Currency changes
+relabel the amounts; there is no FX conversion. Success returns 200 with the
+persisted Quote and position/UUID-ordered items inside `data`, decimal strings,
+and `Cache-Control: no-store`. Validation errors return 422. No source or
+destination documents are modified.
+
+### Read Quote (Task 8.3)
+
+`GET /api/v1/quotes/{quote_id}` requires access bearer authentication and returns
+200 with persisted Quote fields and items inside `data`. Items are ordered by
+position then UUID ascending. Amounts remain decimal strings; no recalculation
+occurs on reads. Missing and foreign quotes return 404 `QUOTE_NOT_FOUND` with
+identical bodies. Malformed UUIDs return 422. Responses use `Cache-Control: no-store`.
+
+### List Quotes (Task 8.2)
+
+`GET /api/v1/quotes` requires access bearer authentication. Returns 200 with
+`data` containing persisted Quote fields and items, and `meta` containing
+`page`, `page_size`, and the total owned Quote count. Defaults: page 1, page_size
+20; page must be 1..2147483647 and page_size 1..100 (invalid values return 422).
+Results are ordered by created_at descending, then UUID descending. Items are
+ordered by position ascending, then UUID ascending. Empty/out-of-range pages
+return an empty array. Responses use `Cache-Control: no-store` and decimal
+strings. Only the authenticated owner's quotes are counted or returned.
+Filtering/search/sort parameters are deferred to Task 18.3.
+
 ### Create Quote
 
 `POST /api/v1/quotes` requires an access bearer token. Success returns HTTP 201
