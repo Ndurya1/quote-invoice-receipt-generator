@@ -15,7 +15,9 @@ class LoadedReceipt:
     client: Client
 
 
-def _load_related(connection, *, user_id, receipts):
+def _load_related(
+    connection: Connection, *, user_id: UUID, receipts: list[Receipt],
+) -> list[LoadedReceipt]:
     if not receipts:
         return []
     with connection.cursor(row_factory=class_row(Client)) as cursor:
@@ -35,11 +37,16 @@ def _load_related(connection, *, user_id, receipts):
 def get_receipt_for_user(
     connection: Connection, *, user_id: UUID, receipt_id: UUID, for_update: bool = False,
 ) -> LoadedReceipt | None:
-    with connection.cursor(row_factory=class_row(Receipt)) as cursor:
-        cursor.execute('SELECT * FROM receipts WHERE user_id = %s AND id = %s'
-                       + (' FOR UPDATE' if for_update else ''), (user_id, receipt_id))
-        receipt = cursor.fetchone()
-    return _load_related(connection, user_id=user_id, receipts=[receipt])[0] if receipt else None
+    """Load one owned receipt and its items from one consistent snapshot."""
+    with connection.transaction():
+        with connection.cursor(row_factory=class_row(Receipt)) as cursor:
+            cursor.execute(
+                'SELECT * FROM receipts WHERE user_id = %s AND id = %s'
+                + (' FOR UPDATE' if for_update else ' FOR SHARE'),
+                (user_id, receipt_id),
+            )
+            receipt = cursor.fetchone()
+        return _load_related(connection, user_id=user_id, receipts=[receipt])[0] if receipt else None
 
 
 def paginate_receipts_for_user(
@@ -49,9 +56,12 @@ def paginate_receipts_for_user(
         raise ValueError('Invalid receipt pagination bounds')
     total = connection.execute('SELECT count(*) FROM receipts WHERE user_id = %s',
                                (user_id,)).fetchone()[0]
-    with connection.cursor(row_factory=class_row(Receipt)) as cursor:
-        cursor.execute('SELECT * FROM receipts WHERE user_id = %s '
-                       'ORDER BY created_at DESC, id DESC LIMIT %s OFFSET %s',
-                       (user_id, page_size, (page - 1) * page_size))
-        receipts = cursor.fetchall()
-    return _load_related(connection, user_id=user_id, receipts=receipts), total
+    with connection.transaction():
+        with connection.cursor(row_factory=class_row(Receipt)) as cursor:
+            cursor.execute(
+                'SELECT * FROM receipts WHERE user_id = %s '
+                'ORDER BY created_at DESC, id DESC LIMIT %s OFFSET %s FOR SHARE',
+                (user_id, page_size, (page - 1) * page_size),
+            )
+            receipts = cursor.fetchall()
+        return _load_related(connection, user_id=user_id, receipts=receipts), total

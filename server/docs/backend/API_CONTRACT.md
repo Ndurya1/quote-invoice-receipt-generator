@@ -645,6 +645,17 @@ Direct create request:
 
 ---
 
+Receipt collection and detail reads are owner-scoped and use the standard
+pagination metadata. Missing or foreign Receipts return 404
+`RECEIPT_NOT_FOUND`. PATCH may change only direct, unlinked Receipts;
+receipt number, owner, source Invoice, timestamps, and computed amounts are
+server-managed. Financial changes recalculate totals and item replacement
+is transactional. Invoice-linked Receipts return 409
+`INVALID_RECEIPT_STATUS` for PATCH and DELETE. Direct Receipts may be
+deleted, their items cascade, and their numbers are never reused.
+
+---
+
 ## 11. PDF Endpoints
 
 - `GET /api/v1/quotes/{quote_id}/pdf`
