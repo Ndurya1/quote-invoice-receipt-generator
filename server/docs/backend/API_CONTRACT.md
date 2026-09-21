@@ -762,3 +762,16 @@ No endpoints for:
 - team/employee management
 
 The MVP is a document-generation and document-conversion product, not a payment processor or accounting platform.
+
+## Quote lifecycle actions (Task 9)
+
+Lifecycle actions require access bearer authentication and no request body.
+Success returns 200 with the full persisted quote and items in `data`, using
+`Cache-Control: no-store`. The action URL selects the target status; request
+fields cannot override status, ownership, totals or other quote fields.
+Invalid or repeated transitions return 409 `INVALID_QUOTE_STATUS`. Missing and
+foreign quotes return identical 404 `QUOTE_NOT_FOUND` errors; malformed UUIDs
+return 422. Status changes are transactional and lock the owned quote first.
+
+- `POST /api/v1/quotes/{quote_id}/send`: DRAFT -> SENT. Marks sent only; no email
+  or WhatsApp delivery occurs.

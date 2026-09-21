@@ -16,3 +16,9 @@ CONVERTED requires an invoice linked to the quote and its owner. Task 13 will
 create that invoice and call this service within one outer transaction; this
 task does not implement invoice conversion. EXPIRED has service support but
 no scheduler or public expire action. Dates do not implicitly change status.
+
+## 9.2 Mark sent
+
+POST /api/v1/quotes/{quote_id}/send marks DRAFT as SENT and returns the saved
+quote and items. Auth, ownership, every disallowed source status, response
+integrity and OpenAPI are tested. No message delivery is performed.
