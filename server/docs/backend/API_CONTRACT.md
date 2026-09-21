@@ -775,3 +775,4 @@ return 422. Status changes are transactional and lock the owned quote first.
 
 - `POST /api/v1/quotes/{quote_id}/send`: DRAFT -> SENT. Marks sent only; no email
   or WhatsApp delivery occurs.
+- `POST /api/v1/quotes/{quote_id}/accept`: DRAFT or SENT -> ACCEPTED.

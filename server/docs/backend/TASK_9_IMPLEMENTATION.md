@@ -22,3 +22,9 @@ no scheduler or public expire action. Dates do not implicitly change status.
 POST /api/v1/quotes/{quote_id}/send marks DRAFT as SENT and returns the saved
 quote and items. Auth, ownership, every disallowed source status, response
 integrity and OpenAPI are tested. No message delivery is performed.
+
+## 9.3 Accept
+
+POST /api/v1/quotes/{quote_id}/accept accepts either DRAFT or SENT. Repeated
+acceptance and all other source states are conflicts. Tests cover both valid
+paths, all invalid states, ownership, authentication and response integrity.

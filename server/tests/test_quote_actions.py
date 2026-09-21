@@ -75,3 +75,16 @@ class QuoteActionTests(unittest.TestCase):
 
     def test_send_access_and_contract(self):
         self.assert_action_access_and_contract('send')
+
+    def test_accept_returns_persisted_accepted_quote_from_draft_and_sent(self):
+        for status in ('DRAFT', 'SENT'):
+            self.connection.execute('UPDATE quotes SET status = %s WHERE id = %s',
+                                    (status, UUID(self.quote['id'])))
+            with self.subTest(status=status):
+                self.assert_action_success('accept', 'ACCEPTED')
+
+    def test_accept_rejects_every_other_status(self):
+        self.assert_action_rejects_statuses('accept', {QuoteStatus.DRAFT, QuoteStatus.SENT})
+
+    def test_accept_access_and_contract(self):
+        self.assert_action_access_and_contract('accept')
