@@ -4,7 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from psycopg import Connection
 
 from app.accounts.dependencies import get_current_user
@@ -14,7 +14,7 @@ from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
 from app.invoices.queries import get_invoice_for_user, paginate_invoices_for_user
 from app.invoices.schemas import InvoiceCreate, InvoiceDetail, InvoiceListResponse, InvoicePatch, InvoiceResponse
-from app.invoices.service import create_invoice, update_invoice
+from app.invoices.service import create_invoice, delete_invoice, update_invoice
 
 router = APIRouter(prefix='/invoices', tags=['invoices'])
 
@@ -60,6 +60,16 @@ def patch_invoice(
     response = resource_response(InvoiceDetail(**updated.invoice.model_dump(), items=updated.items))
     response.headers['Cache-Control'] = 'no-store'
     return response
+
+
+@router.delete('/{invoice_id}', status_code=204, response_class=Response)
+def remove_invoice(
+    invoice_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> Response:
+    delete_invoice(connection, user_id=user.id, invoice_id=invoice_id)
+    return Response(status_code=204, headers={'Cache-Control': 'no-store'})
 
 
 @router.post('', status_code=201, response_model=InvoiceResponse)

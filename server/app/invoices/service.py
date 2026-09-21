@@ -125,3 +125,20 @@ def update_invoice(
             connection.execute('DELETE FROM invoice_items WHERE invoice_id = %s', (invoice_id,))
             items = _insert_items(connection, invoice_id=invoice_id, totals=totals)
         return CreatedInvoice(invoice, tuple(sorted(items, key=lambda item: (item.position, item.id))))
+
+
+def delete_invoice(connection: Connection, *, user_id: UUID, invoice_id: UUID) -> None:
+    """Delete only an owned, unlinked draft invoice with no receipt references."""
+    with connection.transaction():
+        _get_mutable_invoice(connection, user_id=user_id, invoice_id=invoice_id)
+        if connection.execute(
+            'SELECT 1 FROM receipts WHERE source_invoice_id = %s LIMIT 1', (invoice_id,),
+        ).fetchone():
+            raise DomainError('INVALID_INVOICE_STATUS', 'Receipt-linked invoices cannot be deleted.',
+                              status_code=409)
+        deleted = connection.execute(
+            'DELETE FROM invoices WHERE user_id = %s AND id = %s RETURNING id',
+            (user_id, invoice_id),
+        ).fetchone()
+        if deleted is None:
+            raise RuntimeError('Invoice deletion returned no row')
