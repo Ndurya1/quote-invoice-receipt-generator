@@ -20,6 +20,19 @@ class QuoteResponse(BaseModel):
     data: QuoteDetail
 
 
+class QuoteConvert(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    issue_date: date
+    due_date: date | None = None
+
+    @model_validator(mode='after')
+    def validate_dates(self):
+        if self.due_date is not None and self.due_date < self.issue_date:
+            raise ValueError('Due date cannot precede issue date')
+        return self
+
+
 class QuotePageMeta(BaseModel):
     page: int
     page_size: int
