@@ -529,6 +529,37 @@ Request shape mirrors Quote creation but uses:
 
 Computed totals remain backend-authoritative.
 
+### Invoice Reads, Updates, and Deletion (Tasks 11.1–11.6)
+
+`GET /api/v1/invoices` returns an owner-scoped, newest-first collection using
+the standard `page` and `page_size` parameters and response metadata.
+`GET /api/v1/invoices/{invoice_id}` returns the persisted invoice and its
+items. Missing or foreign invoices return 404 `INVOICE_NOT_FOUND`.
+
+Only unlinked `DRAFT` invoices may be patched or deleted. Invoice number,
+owner, source quote, status, timestamps, and computed amounts are
+server-managed. PATCH merges editable fields and recalculates all totals.
+Non-draft or source-linked invoices return 409 `INVALID_INVOICE_STATUS`.
+Deleting an eligible invoice cascades its items; invoices referenced by a
+Receipt cannot be deleted and return the same conflict code.
+
+### Invoice Status Actions (Task 12)
+
+Invoice transitions are explicit and transactional:
+
+- `DRAFT → SENT`
+- `DRAFT → CANCELLED`
+- `SENT → PAID`
+- `SENT → CANCELLED`
+- `OVERDUE → PAID`
+- `OVERDUE → CANCELLED`
+
+`PAID` and `CANCELLED` are terminal. `OVERDUE` is reserved for future
+date-based automation; the current API does not assign it automatically.
+Invalid and repeated transitions return 409 `INVALID_INVOICE_STATUS`.
+`mark-paid` records the business status only and does not create a Payment
+record.
+
 ---
 
 ## 9. Convert Invoice to Receipt
