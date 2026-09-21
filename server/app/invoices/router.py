@@ -97,6 +97,18 @@ def mark_invoice_paid(
     return response
 
 
+@router.post('/{invoice_id}/cancel', response_model=InvoiceResponse)
+def cancel_invoice(
+    invoice_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    updated = transition_invoice(connection, user_id=user.id, invoice_id=invoice_id, target=InvoiceStatus.CANCELLED)
+    response = resource_response(InvoiceDetail(**updated.invoice.model_dump(), items=updated.items))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
 @router.post('', status_code=201, response_model=InvoiceResponse)
 def create(
     payload: InvoiceCreate,
