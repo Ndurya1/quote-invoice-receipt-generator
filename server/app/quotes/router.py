@@ -12,9 +12,11 @@ from app.accounts.models import User
 from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
+from app.conversions.quote_invoice import convert_quote_to_invoice
 from app.quotes.models import QuoteStatus
 from app.quotes.queries import get_quote_for_user, paginate_quotes_for_user
-from app.quotes.schemas import QuoteCreate, QuoteDetail, QuoteListResponse, QuotePatch, QuoteResponse
+from app.quotes.schemas import QuoteConvert, QuoteCreate, QuoteDetail, QuoteListResponse, QuotePatch, QuoteResponse
+from app.invoices.schemas import InvoiceDetail, InvoiceResponse
 from app.quotes.service import create_quote, delete_quote, transition_quote, update_quote
 
 router = APIRouter(prefix='/quotes', tags=['quotes'])
@@ -121,5 +123,22 @@ def reject_quote(
     """Reject an owned sent quote."""
     updated = transition_quote(connection, user_id=user.id, quote_id=quote_id, target=QuoteStatus.REJECTED)
     response = resource_response(QuoteDetail(**updated.quote.model_dump(), items=updated.items))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+@router.post('/{quote_id}/convert', status_code=201, response_model=InvoiceResponse)
+def convert_quote(
+    quote_id: UUID,
+    payload: QuoteConvert,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    converted = convert_quote_to_invoice(
+        connection, user_id=user.id, quote_id=quote_id,
+        issue_date=payload.issue_date, due_date=payload.due_date,
+    )
+    detail = InvoiceDetail(**converted.invoice.model_dump(), items=converted.items)
+    response = resource_response(detail, status_code=201)
     response.headers['Cache-Control'] = 'no-store'
     return response
