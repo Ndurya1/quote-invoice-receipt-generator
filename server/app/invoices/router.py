@@ -12,9 +12,10 @@ from app.accounts.models import User
 from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
+from app.invoices.models import InvoiceStatus
 from app.invoices.queries import get_invoice_for_user, paginate_invoices_for_user
 from app.invoices.schemas import InvoiceCreate, InvoiceDetail, InvoiceListResponse, InvoicePatch, InvoiceResponse
-from app.invoices.service import create_invoice, delete_invoice, update_invoice
+from app.invoices.service import create_invoice, delete_invoice, transition_invoice, update_invoice
 
 router = APIRouter(prefix='/invoices', tags=['invoices'])
 
@@ -70,6 +71,18 @@ def remove_invoice(
 ) -> Response:
     delete_invoice(connection, user_id=user.id, invoice_id=invoice_id)
     return Response(status_code=204, headers={'Cache-Control': 'no-store'})
+
+
+@router.post('/{invoice_id}/send', response_model=InvoiceResponse)
+def send_invoice(
+    invoice_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    updated = transition_invoice(connection, user_id=user.id, invoice_id=invoice_id, target=InvoiceStatus.SENT)
+    response = resource_response(InvoiceDetail(**updated.invoice.model_dump(), items=updated.items))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @router.post('', status_code=201, response_model=InvoiceResponse)
