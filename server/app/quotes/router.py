@@ -110,3 +110,16 @@ def accept_quote(
     response = resource_response(QuoteDetail(**updated.quote.model_dump(), items=updated.items))
     response.headers['Cache-Control'] = 'no-store'
     return response
+
+
+@router.post('/{quote_id}/reject', response_model=QuoteResponse)
+def reject_quote(
+    quote_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    """Reject an owned sent quote."""
+    updated = transition_quote(connection, user_id=user.id, quote_id=quote_id, target=QuoteStatus.REJECTED)
+    response = resource_response(QuoteDetail(**updated.quote.model_dump(), items=updated.items))
+    response.headers['Cache-Control'] = 'no-store'
+    return response

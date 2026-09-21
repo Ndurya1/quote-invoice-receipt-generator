@@ -28,3 +28,9 @@ integrity and OpenAPI are tested. No message delivery is performed.
 POST /api/v1/quotes/{quote_id}/accept accepts either DRAFT or SENT. Repeated
 acceptance and all other source states are conflicts. Tests cover both valid
 paths, all invalid states, ownership, authentication and response integrity.
+
+## 9.4 Reject
+
+POST /api/v1/quotes/{quote_id}/reject changes SENT to REJECTED. Drafts cannot
+be rejected directly. Tests cover send-then-reject, all invalid source states,
+authentication, ownership and the API contract.

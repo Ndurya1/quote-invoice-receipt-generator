@@ -88,3 +88,13 @@ class QuoteActionTests(unittest.TestCase):
 
     def test_accept_access_and_contract(self):
         self.assert_action_access_and_contract('accept')
+
+    def test_reject_returns_persisted_rejected_quote(self):
+        self.assertEqual(self.action('send').status_code, 200)
+        self.assert_action_success('reject', 'REJECTED')
+
+    def test_reject_requires_sent_status(self):
+        self.assert_action_rejects_statuses('reject', {QuoteStatus.SENT})
+
+    def test_reject_access_and_contract(self):
+        self.assert_action_access_and_contract('reject')
