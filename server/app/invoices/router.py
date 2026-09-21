@@ -85,6 +85,18 @@ def send_invoice(
     return response
 
 
+@router.post('/{invoice_id}/mark-paid', response_model=InvoiceResponse)
+def mark_invoice_paid(
+    invoice_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    updated = transition_invoice(connection, user_id=user.id, invoice_id=invoice_id, target=InvoiceStatus.PAID)
+    response = resource_response(InvoiceDetail(**updated.invoice.model_dump(), items=updated.items))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
 @router.post('', status_code=201, response_model=InvoiceResponse)
 def create(
     payload: InvoiceCreate,
