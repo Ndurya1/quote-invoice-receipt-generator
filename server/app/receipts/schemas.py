@@ -18,6 +18,17 @@ class ReceiptResponse(BaseModel):
     data: ReceiptDetail
 
 
+class ReceiptPageMeta(BaseModel):
+    page: int
+    page_size: int
+    total: int
+
+
+class ReceiptListResponse(BaseModel):
+    data: list[ReceiptDetail]
+    meta: ReceiptPageMeta
+
+
 class ReceiptCreate(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
