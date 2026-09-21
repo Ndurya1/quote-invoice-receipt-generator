@@ -136,3 +136,48 @@ def delete_quote(connection: Connection, *, user_id: UUID, quote_id: UUID) -> No
             raise
         raise DomainError('INVALID_QUOTE_STATUS', 'Invoice-linked quotes cannot be deleted.',
                           status_code=409) from None
+
+
+_ALLOWED_QUOTE_TRANSITIONS = frozenset({
+    (QuoteStatus.DRAFT, QuoteStatus.SENT),
+    (QuoteStatus.DRAFT, QuoteStatus.ACCEPTED),
+    (QuoteStatus.SENT, QuoteStatus.ACCEPTED),
+    (QuoteStatus.SENT, QuoteStatus.REJECTED),
+    (QuoteStatus.SENT, QuoteStatus.EXPIRED),
+    (QuoteStatus.ACCEPTED, QuoteStatus.CONVERTED),
+})
+
+
+def validate_quote_transition(current: QuoteStatus, target: QuoteStatus) -> None:
+    """Reject every transition outside the explicit lifecycle, including repeats."""
+    if (current, target) not in _ALLOWED_QUOTE_TRANSITIONS:
+        raise DomainError('INVALID_QUOTE_STATUS', 'This quote status transition is not allowed.',
+                          status_code=409)
+
+
+def transition_quote(
+    connection: Connection, *, user_id: UUID, quote_id: UUID, target: QuoteStatus,
+) -> CreatedQuote:
+    """Lock and transition an owned quote, joining any enclosing transaction.
+
+    Conversion callers must create the linked invoice in the same outer
+    transaction before requesting CONVERTED. Expiry scheduling is a future caller.
+    """
+    with connection.transaction():
+        loaded = get_quote_for_user(connection, user_id=user_id, quote_id=quote_id, for_update=True)
+        if loaded is None:
+            raise DomainError('QUOTE_NOT_FOUND', 'Quote not found.', status_code=404)
+        validate_quote_transition(loaded.quote.status, target)
+        if target == QuoteStatus.CONVERTED and not connection.execute(
+            'SELECT 1 FROM invoices WHERE source_quote_id = %s AND user_id = %s',
+            (quote_id, user_id),
+        ).fetchone():
+            raise DomainError('INVALID_QUOTE_STATUS', 'Conversion requires a linked invoice.',
+                              status_code=409)
+        with connection.cursor(row_factory=class_row(Quote)) as cursor:
+            cursor.execute('UPDATE quotes SET status = %s WHERE user_id = %s AND id = %s RETURNING *',
+                           (target.value, user_id, quote_id))
+            quote = cursor.fetchone()
+            if quote is None:
+                raise RuntimeError('Quote transition returned no row')
+        return CreatedQuote(quote, loaded.items)

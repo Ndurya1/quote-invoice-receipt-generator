@@ -426,21 +426,25 @@ Example response:
 
 ---
 
-## 6. Quote Status Actions
+## 6. Quote Status Actions (Task 9)
 
-### Mark Sent
+Lifecycle actions require access bearer authentication and no request body.
+Success returns 200 with the full persisted quote and items in `data`, using
+`Cache-Control: no-store`. The action URL selects the target status; request
+fields cannot override status, ownership, totals or other quote fields. Extra
+body and query fields are ignored.
+Invalid or repeated transitions return 409 `INVALID_QUOTE_STATUS`. Missing and
+foreign quotes return identical 404 `QUOTE_NOT_FOUND` errors; malformed UUIDs
+return 422. Status changes are transactional and lock the owned quote first.
 
-`POST /api/v1/quotes/{quote_id}/send`
+- `POST /api/v1/quotes/{quote_id}/send`: DRAFT -> SENT. Marks sent only; no email
+  or WhatsApp delivery occurs.
+- `POST /api/v1/quotes/{quote_id}/accept`: DRAFT or SENT -> ACCEPTED.
+- `POST /api/v1/quotes/{quote_id}/reject`: SENT -> REJECTED.
 
-### Accept
-
-`POST /api/v1/quotes/{quote_id}/accept`
-
-### Reject
-
-`POST /api/v1/quotes/{quote_id}/reject`
-
-State transitions must follow domain invariants.
+The service also validates SENT -> EXPIRED and ACCEPTED -> CONVERTED. Expiry
+scheduling is deferred. CONVERTED requires a linked invoice and belongs inside
+the atomic conversion transaction described below.
 
 ---
 
