@@ -20,6 +20,17 @@ class InvoiceResponse(BaseModel):
     data: InvoiceDetail
 
 
+class InvoicePageMeta(BaseModel):
+    page: int
+    page_size: int
+    total: int
+
+
+class InvoiceListResponse(BaseModel):
+    data: list[InvoiceDetail]
+    meta: InvoicePageMeta
+
+
 class InvoiceCreate(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
