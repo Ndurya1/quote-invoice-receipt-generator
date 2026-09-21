@@ -142,3 +142,40 @@ def delete_invoice(connection: Connection, *, user_id: UUID, invoice_id: UUID) -
         ).fetchone()
         if deleted is None:
             raise RuntimeError('Invoice deletion returned no row')
+
+
+_ALLOWED_INVOICE_TRANSITIONS = frozenset({
+    (InvoiceStatus.DRAFT, InvoiceStatus.SENT),
+    (InvoiceStatus.DRAFT, InvoiceStatus.CANCELLED),
+    (InvoiceStatus.SENT, InvoiceStatus.PAID),
+    (InvoiceStatus.SENT, InvoiceStatus.CANCELLED),
+    (InvoiceStatus.OVERDUE, InvoiceStatus.PAID),
+    (InvoiceStatus.OVERDUE, InvoiceStatus.CANCELLED),
+})
+
+
+def validate_invoice_transition(current: InvoiceStatus, target: InvoiceStatus) -> None:
+    """Reject every transition outside the explicit Invoice lifecycle."""
+    if (current, target) not in _ALLOWED_INVOICE_TRANSITIONS:
+        raise DomainError('INVALID_INVOICE_STATUS', 'This invoice status transition is not allowed.',
+                          status_code=409)
+
+
+def transition_invoice(
+    connection: Connection, *, user_id: UUID, invoice_id: UUID, target: InvoiceStatus,
+) -> CreatedInvoice:
+    """Lock and transition an owned invoice in a transaction."""
+    with connection.transaction():
+        loaded = get_invoice_for_user(connection, user_id=user_id, invoice_id=invoice_id, for_update=True)
+        if loaded is None:
+            raise DomainError('INVOICE_NOT_FOUND', 'Invoice not found.', status_code=404)
+        validate_invoice_transition(loaded.invoice.status, target)
+        with connection.cursor(row_factory=class_row(Invoice)) as cursor:
+            cursor.execute(
+                'UPDATE invoices SET status = %s WHERE user_id = %s AND id = %s RETURNING *',
+                (target.value, user_id, invoice_id),
+            )
+            invoice = cursor.fetchone()
+            if invoice is None:
+                raise RuntimeError('Invoice transition returned no row')
+        return CreatedInvoice(invoice, loaded.items)
