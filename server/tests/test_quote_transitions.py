@@ -1,6 +1,11 @@
 import unittest
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 from uuid import UUID, uuid4
 
+from psycopg import sql
+
+from app.common.database import connect_database
 from app.common.errors import DomainError
 from app.quotes.models import QuoteStatus
 from app.quotes.service import transition_quote, validate_quote_transition
@@ -73,3 +78,80 @@ class QuoteTransitionTests(unittest.TestCase):
             self.transition('CONVERTED')
         self.assertEqual(error.exception.status_code, 409)
         self.assertEqual(self.get(), before)
+
+    def link_invoice(self):
+        return self.connection.execute(
+            '''INSERT INTO invoices (user_id, client_id, source_quote_id, invoice_number,
+               issue_date, currency, subtotal, total)
+               VALUES (%s, %s, %s, 'INV-0001', '2026-09-15', 'KES', 100, 106) RETURNING id''',
+            (UUID(self.user_id), UUID(self.client_id), UUID(self.quote['id'])),
+        ).fetchone()[0]
+
+    def test_every_status_pair_obeys_matrix_and_preserves_document(self):
+        allowed = {('DRAFT', 'SENT'), ('DRAFT', 'ACCEPTED'), ('SENT', 'ACCEPTED'),
+                   ('SENT', 'REJECTED'), ('SENT', 'EXPIRED'), ('ACCEPTED', 'CONVERTED')}
+        for current in QuoteStatus:
+            for target in QuoteStatus:
+                with self.subTest(current=current, target=target):
+                    self.connection.execute('UPDATE quotes SET status = %s WHERE id = %s',
+                                            (current.value, UUID(self.quote['id'])))
+                    before = self.get()
+                    if (current, target) in allowed:
+                        if target == QuoteStatus.CONVERTED:
+                            self.link_invoice()
+                        result = self.transition(target)
+                        saved = self.get()
+                        self.assertEqual(result.quote.status, target)
+                        self.assertEqual(saved['status'], target)
+                        for field in before.keys() - {'status', 'updated_at'}:
+                            self.assertEqual(saved[field], before[field], field)
+                    else:
+                        with self.assertRaises(DomainError) as error:
+                            self.transition(target)
+                        self.assertEqual(error.exception.code, 'INVALID_QUOTE_STATUS')
+                        self.assertEqual(error.exception.status_code, 409)
+                        self.assertEqual(self.get(), before)
+
+    def test_conversion_transition_joins_invoice_transaction(self):
+        self.transition('ACCEPTED')
+        before = self.get()
+        with self.assertRaisesRegex(RuntimeError, 'abort'):
+            with self.connection.transaction():
+                self.link_invoice()
+                self.transition('CONVERTED')
+                raise RuntimeError('abort')
+        self.assertEqual(self.get(), before)
+        self.assertEqual(self.connection.execute('SELECT count(*) FROM invoices').fetchone()[0], 0)
+        with self.connection.transaction():
+            invoice_id = self.link_invoice()
+            self.transition('CONVERTED')
+        self.assertEqual(self.get()['status'], 'CONVERTED')
+        self.assertEqual(self.connection.execute('SELECT source_quote_id FROM invoices WHERE id = %s',
+                                                (invoice_id,)).fetchone()[0], UUID(self.quote['id']))
+
+    def test_competing_transitions_validate_after_lock(self):
+        for initial, targets in [('DRAFT', ('SENT', 'SENT')), ('SENT', ('ACCEPTED', 'REJECTED'))]:
+            with self.subTest(initial=initial, targets=targets):
+                self.connection.execute('UPDATE quotes SET status = %s WHERE id = %s',
+                                        (initial, UUID(self.quote['id'])))
+                barrier = Barrier(2)
+
+                def change(target):
+                    with connect_database(self.database_settings, test=True) as connection:
+                        connection.execute(sql.SQL('SET search_path TO {}').format(sql.Identifier(self.schema)))
+                        connection.execute("SET statement_timeout = '10s'")
+                        barrier.wait(timeout=10)
+                        try:
+                            result = transition_quote(connection, user_id=UUID(self.user_id),
+                                                      quote_id=UUID(self.quote['id']), target=QuoteStatus(target))
+                            return 200, result.quote.status.value
+                        except DomainError as exc:
+                            return exc.status_code, exc.code
+
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    results = list(executor.map(change, targets))
+                self.assertEqual(sorted(code for code, _ in results), [200, 409])
+                winner = next(status for code, status in results if code == 200)
+                self.assertEqual(self.get()['status'], winner)
+                self.assertIn((409, 'INVALID_QUOTE_STATUS'), results)
+                self.assertEqual(self.get()['items'], self.quote['items'])

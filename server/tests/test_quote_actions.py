@@ -98,3 +98,67 @@ class QuoteActionTests(unittest.TestCase):
 
     def test_reject_access_and_contract(self):
         self.assert_action_access_and_contract('reject')
+
+    def test_forged_action_fields_cannot_change_target_or_document(self):
+        for action, source, target in [('send', 'DRAFT', 'SENT'), ('accept', 'DRAFT', 'ACCEPTED'),
+                                       ('reject', 'SENT', 'REJECTED')]:
+            with self.subTest(action=action):
+                self.connection.execute('UPDATE quotes SET status = %s WHERE id = %s',
+                                        (source, UUID(self.quote['id'])))
+                before = self.get()
+                response = self.action(action, json={'status': 'CONVERTED', 'user_id': str(uuid4()),
+                                                     'total': '999999', 'items': [], 'notes': 'forged'},
+                                       params={'status': 'CONVERTED', 'user_id': str(uuid4())})
+                self.assertEqual(response.status_code, 200)
+                saved = response.json()['data']
+                self.assertEqual(saved['status'], target)
+                for field in before.keys() - {'status', 'updated_at'}:
+                    self.assertEqual(saved[field], before[field], field)
+
+    def test_action_database_failures_are_safe_and_atomic(self):
+        self.connection.execute('''CREATE FUNCTION reject_status_change() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+            BEGIN
+                IF NEW.status <> OLD.status THEN RAISE EXCEPTION 'Private lifecycle detail'; END IF;
+                RETURN NEW;
+            END; $$;
+            CREATE TRIGGER reject_status_change AFTER UPDATE ON quotes
+            FOR EACH ROW EXECUTE FUNCTION reject_status_change();''')
+        for action, source in [('send', 'DRAFT'), ('accept', 'DRAFT'), ('reject', 'SENT')]:
+            with self.subTest(action=action):
+                self.connection.execute('ALTER TABLE quotes DISABLE TRIGGER reject_status_change')
+                self.connection.execute('UPDATE quotes SET status = %s WHERE id = %s',
+                                        (source, UUID(self.quote['id'])))
+                self.connection.execute('ALTER TABLE quotes ENABLE TRIGGER reject_status_change')
+                before = self.get()
+                response = self.action(action)
+                self.assertEqual(response.status_code, 500)
+                self.assertEqual(response.json()['error']['code'], 'INTERNAL_SERVER_ERROR')
+                self.assertNotIn('Private lifecycle detail', response.text)
+                self.assertEqual(self.get(), before)
+        self.assertTrue(all(connection.closed for connection in self.request_connections))
+
+    def test_refresh_tokens_cannot_perform_lifecycle_actions(self):
+        refresh = self.login().json()['data']['refresh_token']
+        for action in ('send', 'accept', 'reject'):
+            with self.subTest(action=action):
+                response = self.client.post(self.url + '/' + action,
+                                            headers={'Authorization': 'Bearer ' + refresh})
+                self.assertEqual(response.status_code, 401)
+        self.assertEqual(self.get(), self.quote)
+
+    def test_status_actions_preserve_draft_only_edit_and_delete_policy(self):
+        for actions in [('send',), ('accept',), ('send', 'accept'), ('send', 'reject')]:
+            with self.subTest(actions=actions):
+                quote = self.post(self.payload()).json()['data']
+                url = '/api/v1/quotes/' + quote['id']
+                for action in actions:
+                    response = self.action(action, url)
+                    self.assertEqual(response.status_code, 200)
+                before = response.json()['data']
+                headers = {'Authorization': 'Bearer ' + self.token}
+                for response in (self.client.patch(url, json={'notes': 'changed'}, headers=headers),
+                                 self.client.delete(url, headers=headers)):
+                    self.assertEqual(response.status_code, 409)
+                    self.assertEqual(response.json()['error']['code'], 'INVALID_QUOTE_STATUS')
+                self.assertEqual(self.client.get(url, headers=headers).json()['data'], before)
+        self.assertEqual(self.get(), self.quote)

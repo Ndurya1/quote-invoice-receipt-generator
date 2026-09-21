@@ -800,3 +800,32 @@ The OpenAPI schema declares HTTP bearer authentication for this endpoint.
 
 Run the authentication checks with
 `python -m unittest tests.test_current_user tests.test_refresh tests.test_login -v`.
+
+## Quote lifecycle actions (Task 9)
+
+Authenticated owners can change quote status with bodyless POST requests:
+
+| Endpoint | Allowed transition |
+| --- | --- |
+| `/api/v1/quotes/{quote_id}/send` | DRAFT -> SENT |
+| `/api/v1/quotes/{quote_id}/accept` | DRAFT or SENT -> ACCEPTED |
+| `/api/v1/quotes/{quote_id}/reject` | SENT -> REJECTED |
+
+Success returns 200 with the complete persisted quote and items inside `data`.
+Only status and updated_at change. Requests cannot override financial values,
+items, ownership or the target status. The send action records status only;
+email/WhatsApp delivery is not included.
+
+Invalid/repeated transitions return 409 `INVALID_QUOTE_STATUS`; missing and
+foreign quotes return the same 404 `QUOTE_NOT_FOUND`. Authentication failures
+return 401 and malformed UUIDs return 422. The service locks the quote inside
+a transaction, so competing actions recheck the latest status before writing.
+Existing DRAFT-only edit/delete rules still apply after lifecycle actions.
+
+The service also supports SENT -> EXPIRED and ACCEPTED -> CONVERTED. There is
+no automatic expiry job or public expiry action. CONVERTED requires a linked
+invoice; Task 13 will create the invoice and transition within one transaction.
+No database migration is needed.
+
+Run `python -m unittest tests.test_quote_transitions tests.test_quote_actions -v`.
+See [Task 9 implementation](docs/backend/TASK_9_IMPLEMENTATION.md) for details.
