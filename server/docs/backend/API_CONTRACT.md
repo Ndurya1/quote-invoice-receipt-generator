@@ -543,6 +543,23 @@ Non-draft or source-linked invoices return 409 `INVALID_INVOICE_STATUS`.
 Deleting an eligible invoice cascades its items; invoices referenced by a
 Receipt cannot be deleted and return the same conflict code.
 
+### Invoice Status Actions (Task 12)
+
+Invoice transitions are explicit and transactional:
+
+- `DRAFT → SENT`
+- `DRAFT → CANCELLED`
+- `SENT → PAID`
+- `SENT → CANCELLED`
+- `OVERDUE → PAID`
+- `OVERDUE → CANCELLED`
+
+`PAID` and `CANCELLED` are terminal. `OVERDUE` is reserved for future
+date-based automation; the current API does not assign it automatically.
+Invalid and repeated transitions return 409 `INVALID_INVOICE_STATUS`.
+`mark-paid` records the business status only and does not create a Payment
+record.
+
 ---
 
 ## 9. Convert Invoice to Receipt
