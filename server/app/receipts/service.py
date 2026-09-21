@@ -112,3 +112,15 @@ def update_receipt(
             connection.execute('DELETE FROM receipt_items WHERE receipt_id = %s', (receipt_id,))
             items = _insert_items(connection, receipt_id=receipt_id, totals=totals)
         return CreatedReceipt(receipt, tuple(sorted(items, key=lambda item: (item.position, item.id))))
+
+
+def delete_receipt(connection: Connection, *, user_id: UUID, receipt_id: UUID) -> None:
+    """Delete only an owned, direct Receipt; its items cascade transactionally."""
+    with connection.transaction():
+        _get_mutable_receipt(connection, user_id=user_id, receipt_id=receipt_id)
+        deleted = connection.execute(
+            'DELETE FROM receipts WHERE user_id = %s AND id = %s RETURNING id',
+            (user_id, receipt_id),
+        ).fetchone()
+        if deleted is None:
+            raise RuntimeError('Receipt deletion returned no row')

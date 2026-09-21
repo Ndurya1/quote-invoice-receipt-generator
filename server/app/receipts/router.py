@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from psycopg import Connection
 
 from app.accounts.dependencies import get_current_user
@@ -12,7 +12,7 @@ from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
 from app.receipts.queries import get_receipt_for_user, paginate_receipts_for_user
 from app.receipts.schemas import ReceiptCreate, ReceiptDetail, ReceiptListResponse, ReceiptPatch, ReceiptResponse
-from app.receipts.service import create_receipt, update_receipt
+from app.receipts.service import create_receipt, delete_receipt, update_receipt
 
 router = APIRouter(prefix='/receipts', tags=['receipts'])
 
@@ -58,6 +58,16 @@ def patch_receipt(
     response = resource_response(ReceiptDetail(**updated.receipt.model_dump(), items=updated.items))
     response.headers['Cache-Control'] = 'no-store'
     return response
+
+
+@router.delete('/{receipt_id}', status_code=204, response_class=Response)
+def remove_receipt(
+    receipt_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> Response:
+    delete_receipt(connection, user_id=user.id, receipt_id=receipt_id)
+    return Response(status_code=204, headers={'Cache-Control': 'no-store'})
 
 
 @router.post('', status_code=201, response_model=ReceiptResponse)
