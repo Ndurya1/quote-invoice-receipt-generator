@@ -11,8 +11,8 @@ from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
 from app.receipts.queries import get_receipt_for_user, paginate_receipts_for_user
-from app.receipts.schemas import ReceiptCreate, ReceiptDetail, ReceiptListResponse, ReceiptResponse
-from app.receipts.service import create_receipt
+from app.receipts.schemas import ReceiptCreate, ReceiptDetail, ReceiptListResponse, ReceiptPatch, ReceiptResponse
+from app.receipts.service import create_receipt, update_receipt
 
 router = APIRouter(prefix='/receipts', tags=['receipts'])
 
@@ -43,6 +43,19 @@ def read_receipt(
     if loaded is None:
         raise DomainError('RECEIPT_NOT_FOUND', 'Receipt not found.', status_code=404)
     response = resource_response(ReceiptDetail(**loaded.receipt.model_dump(), items=loaded.items))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+@router.patch('/{receipt_id}', response_model=ReceiptResponse)
+def patch_receipt(
+    receipt_id: UUID,
+    payload: ReceiptPatch,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    updated = update_receipt(connection, user_id=user.id, receipt_id=receipt_id, payload=payload)
+    response = resource_response(ReceiptDetail(**updated.receipt.model_dump(), items=updated.items))
     response.headers['Cache-Control'] = 'no-store'
     return response
 
