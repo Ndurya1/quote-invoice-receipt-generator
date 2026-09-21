@@ -13,8 +13,8 @@ from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
 from app.invoices.queries import get_invoice_for_user, paginate_invoices_for_user
-from app.invoices.schemas import InvoiceCreate, InvoiceDetail, InvoiceListResponse, InvoiceResponse
-from app.invoices.service import create_invoice
+from app.invoices.schemas import InvoiceCreate, InvoiceDetail, InvoiceListResponse, InvoicePatch, InvoiceResponse
+from app.invoices.service import create_invoice, update_invoice
 
 router = APIRouter(prefix='/invoices', tags=['invoices'])
 
@@ -45,6 +45,19 @@ def read_invoice(
     if loaded is None:
         raise DomainError('INVOICE_NOT_FOUND', 'Invoice not found.', status_code=404)
     response = resource_response(InvoiceDetail(**loaded.invoice.model_dump(), items=loaded.items))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+@router.patch('/{invoice_id}', response_model=InvoiceResponse)
+def patch_invoice(
+    invoice_id: UUID,
+    payload: InvoicePatch,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> JSONResponse:
+    updated = update_invoice(connection, user_id=user.id, invoice_id=invoice_id, payload=payload)
+    response = resource_response(InvoiceDetail(**updated.invoice.model_dump(), items=updated.items))
     response.headers['Cache-Control'] = 'no-store'
     return response
 
