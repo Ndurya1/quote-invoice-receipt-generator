@@ -1,34 +1,34 @@
-## landing-page narrative. 
+## landing-page narrative.
 progression: Promise → Product → Pain → Workflow → Benefits → Conversion → CTA
 
-## nav bar 
+## nav bar
 ┌──────────────────────────────────────────────────────────────────────┐
 │ [Logo]       How it works    Benefits        Log in [Getstarted] │
 └──────────────────────────────────────────────────────────────────────┘
-# mobile 
+# mobile
 ┌───────────────────────────────┐
 │ [Logo]        Log in    [☰]  │
 └───────────────────────────────┘
 
-## hero section 
- # sell the outcome. 
-  # eyebrow 
+## hero section
+ # sell the outcome.
+  # eyebrow
   QUOTES -> INVOICES -> RECEIPTS
 
   # headline
    Create it once.
 Keep the paperwork moving.
 
-   # supporting copy 
+   # supporting copy
    Create professional quotations in minutes, convert them into invoices when the client says yes, then turn paid invoices into receipts - without entering the same details all over again.
 
 
-   # cta 
+   # cta
     Create your first quotation
     supporting line - Set up your business details once. We'll reuse them for your next document.
 
 
-## problem section 
+## problem section
 
 Your invoice shouldn't start from a blank document every time.
 
@@ -36,7 +36,7 @@ Your invoice shouldn't start from a blank document every time.
 
 You already entered your business details on the quotation. You already entered the client's details. You already listed the work and agreed on the price. So why enter everything again when it's time to invoice?
 
-## how it works 
+## how it works
 HOW IT WORKS
 
 From quotation to receipt without starting over.
@@ -83,10 +83,10 @@ Add quantities and prices, then let the system calculate subtotals, discounts, t
 A quotation doesn't disappear once it's accepted. Carry its information forward into the invoice and receipt.
 
 
-## document-chain showcase 
+## document-chain showcase
  zero unnecesary re-entry
 
- # copy 
+ # copy
  Each document keeps the relevant information from the one before it. No copying between files. No rebuilding documents from scratch.
 
  ## target user action
@@ -99,7 +99,7 @@ Freelancers, contractors and small service businesses don't always have someone 
 Freelancers · Designers · Developers · Consultants · Contractors · Service businesses
 
 
-## final CTA 
+## final CTA
  Ready when you are.
 Your next quotation can take minutes, not another Word document.
 

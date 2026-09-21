@@ -1,19 +1,27 @@
-# React + Vite
+﻿# DocuFlow client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React, Vite, Tailwind CSS and React Router landing page for connected quotations, invoices and receipts.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+From `client/invoice-client`:
 
-## React Compiler
+```sh
+npm ci
+npm run dev
+npm run lint
+npm run build
+```
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+On Windows PowerShell with script execution disabled, use `npm.cmd` instead of `npm`.
 
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
+The public landing page is `/`. Design requirements live in `../docs/LANDING_AUTH_ONBOARDING_DESIGN_SPEC.md`, with shared tokens in `../docs/DASHBOARD_DESIGN_SPEC.md`. The formal specification takes precedence over conflicting draft copy.
 
-## Expanding the ESLint configuration
+## Current scope
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Responsive public navigation, landing sections and footer.
+- Illustrative invoice, with totals calculated from sample data. It is not an editable production form.
+- Account actions are visibly disabled with an availability note. Registration, login and onboarding are not implemented in this design pass, so the account-creation acceptance criterion is outstanding.
+- No backend calls, payment processing, uploads or document generation are implemented by this page.
+
+See `../docs/LANDING_PAGE_AUDIT.md` for changes and validation status.

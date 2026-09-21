@@ -1,162 +1,49 @@
-import React from 'react';
-import Header from '../components/Header';
-import {ArrowRight, Dot} from 'lucide-react'
-import smiling from '../assets/smiling-guy.jpg'
-import logo from "../assets/Docu-logo.png";
+﻿import { ArrowRight, ArrowDown, Building2, Files, FileCheck2, Check } from 'lucide-react';
+import Header, { Brand } from '../components/Header';
+
+const money = (amount) => `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const items = [{ description: 'Brand identity design', detail: 'Visual direction and logo development', quantity: 1, rate: 24000 }, { description: 'Website design', detail: 'Three-page portfolio website', quantity: 3, rate: 6000 }];
+const subtotal = items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+const discount = 2000;
+const tax = (subtotal - discount) * 0.16;
+const total = subtotal - discount + tax;
+
+function InvoiceDemo() {
+  return <figure className="invoice-demo" aria-labelledby="demo-caption">
+    <figcaption id="demo-caption" className="demo-bar"><span className="demo-types">Quotation <span className="selected-type">Invoice</span> Receipt</span><span className="sample-label">Illustrative example</span></figcaption>
+    <div className="invoice-body">
+      <div className="invoice-heading"><div className="sample-business"><span className="business-mark" aria-hidden="true">S.</span><div><strong>Studio North</strong><p>Design & creative services</p></div></div><div className="invoice-reference"><span className="eyebrow">Invoice</span><strong>INV-0008</strong></div></div>
+      <dl className="invoice-metadata"><div><dt>Bill to</dt><dd>Acacia Studio</dd><dd className="secondary">Brand & website project</dd></div><div><dt>Issue date</dt><dd>21 Sep 2026</dd></div><div><dt>Due date</dt><dd>5 Oct 2026</dd></div></dl>
+      <table className="line-items"><caption className="sr-only">Example invoice line items in Kenyan shillings</caption><thead><tr><th scope="col">Description</th><th scope="col">Quantity</th><th scope="col">Rate</th><th scope="col">Amount</th></tr></thead><tbody>{items.map(item => <tr key={item.description}><th scope="row">{item.description}<span>{item.detail}</span></th><td data-label="Qty">{item.quantity}</td><td data-label="Rate">{money(item.rate)}</td><td data-label="Amount">{money(item.quantity * item.rate)}</td></tr>)}</tbody></table>
+      <div className="invoice-bottom"><p><Check size={16} aria-hidden="true" /> Your details, carried forward.<br />Your totals, calculated for you.</p><dl className="totals"><div><dt>Subtotal</dt><dd>{money(subtotal)}</dd></div><div><dt>Discount</dt><dd>−{money(discount)}</dd></div><div><dt>Tax (16%)</dt><dd>{money(tax)}</dd></div><div className="grand-total"><dt>Total</dt><dd>{money(total)}</dd></div></dl></div>
+    </div>
+    <div className="demo-workflow">Quotation <ArrowRight size={14} aria-hidden="true" /> Invoice <ArrowRight size={14} aria-hidden="true" /> Receipt <span>One job. Connected documents.</span></div>
+  </figure>;
+}
+
+const steps = [
+  ['01', 'Set up your business once', 'Save your business name and contact details, ready for your next document.'],
+  ['02', 'Create a quotation or invoice', 'Add the client and the work; quantities and rates become calculated totals.'],
+  ['03', 'Convert and reuse the details', 'Carry an approved quotation into an invoice, then create a receipt for a recorded payment.'],
+  ['04', 'Download and send the PDF', 'Download your document and share it with your client using your usual tools.'],
+];
+const benefits = [
+  [Building2, 'Your business details, already filled in', 'Spend your time describing the job. Your saved business information is ready for every new document.'],
+  [Files, 'Documents that stay connected', 'Keep the original quotation and follow the linked invoice and receipt, with the same client and job details.'],
+  [FileCheck2, 'Professional PDFs without rebuilding templates', 'Give clients clean, consistent documents without adjusting layouts or copying an old file.'],
+];
 
 export default function LandingPage() {
-  return (
-         
-    <div> 
-         <Header />
-
-    <div className='mx-auto w-full max-w-[1200px] px-5 md:px-8 lg:px-12 xl:px-16 2xl:px-20'>
-        <section>
-            
-
-             <div className=" pt-[48px] flex flex-col justify-center items-start lg:mb-28 mb-16   ">
-                <p className='flex gap-2 text-xs font-bold text-green-700 '>QUOTES <ArrowRight className='h-4 w-4' /> INVOICES <ArrowRight className='h-4 w-4'/> RECEIPTS</p>
-
-                <div className='flex flex-col justify-end items-start mb-4 gap-4 '>
-                    <h1 className=' font-semibold md:font-bold font-sans md:text-[48px] text-[36px] text-[#182019] '>Create it once. <br/> 
-                    <span className='text-green-700 '> Keep the paperwork moving.</span></h1>
-
-                    <p className='flex flex-col items-start  max-w-sm text-[18px] pb-4 text-black '>Create professional quotes in minutes, then turn them into invoices and receipts -  without starting over.</p>
-                </div>
-
-                <div className="flex flex-col justify-start items-start gap-2 mb-4 ">
-                    <button className='flex justify-center items-center gap-4 text-white bg-green-700 p-2 rounded-[8px] text-[14px]  font-medium  '>Create quotation <ArrowRight className='h-3 w-3'/> </button>
-                    <p className='text-xs text-gray-600 '> Set up your business details once. We'll reuse them for your next document.</p>
-                </div>
-                
-
-             </div>
-        </section>
-
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-12 lg:mb-28 mb-16 " >
-            <div className="grid lg:col-span-8 gap-3 "> 
-            <p className='flex gap-2 text-xs font-bold text-green-700 uppercase tracking-wider pb-2'> the problem</p>
-            <h2 className="max-w-sm font-sans font-semibold text-[28px] " > Your invoice shouldn't start from a blank document every time.</h2>
-
-            <p>You already entered your business details on the quotation. You already entered the client's details. You already listed the work and agreed on the price. So why enter everything again when it's time to invoice? </p>
-            </div>
-
-           <div className="grid lg:col-span-4"> 
-                <img src={smiling} alt="Invoice" className="w-[300px]  rounded-lg  h-[300px]" />
-            </div>
-
-        </section>
-
-        <section id='How-it-works'  className="flex flex-col justify-end items-start gap-4 lg:gap-12 lg:mb-28 mb-16 " >
-            <div>
-                <h2 className='flex gap-2 text-xs font-bold text-green-700 uppercase tracking-wider pb-2'>How it works</h2>
-                <p className="max-w-sm font-sans font-semibold text-[28px] " > From quotation to receipt without starting over.</p>
-            </div>
-
-            <div  className="grid grid-cols-1 lg:grid-cols-12 gap-4  "> 
-                <div className="grid lg:col-span-4  relative">
-                    <h3 className="text-[18px] font-bold font-sans tracking-wide">Set up once</h3>
-                    <p> Add your business details</p>
-                    <p className="text-gray-600 text-[14px]" >Enter your business name, contact information and other details once. They'll be ready when you create your next document. </p>
-                    <ArrowRight className="hidden lg:flex absolute top-12 right-0 w-5 h-5 text-gray-600  "/>
-                </div>
-                
-
-                <div className="grid lg:col-span-4 gap-3 relative ">
-                    <h3 className="text-[18px] font-bold font-sans tracking-wide">Create</h3>
-                    <p> Fill in the job, not the paperwork</p>
-                    <p className="text-gray-600 text-[14px]">Add your client, line items, quantities, prices, tax and discounts. Your totals are calculated for you. </p>
-                     <ArrowRight className="hidden lg:flex absolute top-12 right-0 w-5 h-5 text-gray-600  "/>
-
-                </div>
-                
-
-                <div className="grid lg:col-span-4 gap-3 ">
-                    <h3 className="text-[18px] font-bold font-sans tracking-wide">Convert</h3>
-                    <p > Keep the document moving</p>
-                    <p className="text-gray-600 text-[14px]">Client approved the quotation? Convert it into an invoice. Once payment is recorded, use that invoice to create the receipt. </p>
-                </div>
-
-            </div>
-        </section>
-
-        <section id='Benefits'  className="grid grid-cols-1 lg:grid-cols-12 gap-4  lg:mb-28 mb-16 "> 
-            <div className="grid lg:col-span-5"> 
-                <p className='flex gap-2 text-xs font-bold text-green-700 uppercase tracking-wider '>Built for small businesses </p>
-                <h2 className="max-w-sm font-sans font-semibold text-[28px] " >Less admin. More time for work </h2>
-            </div>
-
-            <div className=" grid lg:col-span-7 ">
-                <div className="flex flex-col lg:flex-row gap-2 justify-center items-center pb-4" >
-                <div> 
-                    <p className="font-semibold font-sans " > Stop typing the same details</p>   
-                    <p className="text-gray-600 text-[15px]" > Your business information is saved and reused across documents, so every quotation doesn't start from zero.</p> 
-                </div>    
-                <div> 
-                    <p className="font-semibold font-sans "> Look professional from day one </p>   
-                    <p className="text-gray-600 text-[15px]"> Create clean, consistent quotations, invoices and receipts without formatting documents manually. </p> 
-                </div>  
-             </div>
-
-                <div className="flex flex-col lg:flex-row gap-2 lg:gap-12 justify-center items-center pb-4">
-                <div> 
-                    <p className="font-semibold font-sans ">  Let the numbers handle themselves </p>   
-                    <p className="text-gray-600 text-[15px]"> Add quantities and prices, then let the system calculate subtotals, discounts, taxes and final totals. </p> 
-                </div>    
-                <div> 
-                    <p className="font-semibold font-sans "> Keep related documents connected </p>   
-                    <p className="text-gray-600 text-[15px]"> A quotation doesn't disappear once it's accepted. Carry its information forward into the invoice and receipt.</p> 
-                </div>  
-             </div>
-
-            </div>
-
-        </section>
-
-        <section className="gap-4 lg:gap-12 lg:mb-28 mb-16"> 
-            <div  className="max-w-xl font-sans flex flex-col justify-center items-center m-auto"> 
-
-                <h2  className=" font-sans font-semibold text-[28px] " > Built for people who'd rather do the work than the paperwork</h2>
-                <p > Freelancers, contractors and small service businesses don't always have someone dedicated to administration. <span className="font-semibold text-green-700">DocuFlow</span> keeps the basic document workflow simple enough to handle yourself.</p>
-            </div>
-            <p className="hidden lg:flex justify-center items-center text-green-700 m-2 mt-4 tracking-widest"> Freelancers <Dot className="w-12 h-12"/>  Designers <Dot className="w-12 h-12"/>  Developers <Dot className="w-12 h-12"/>  Consultants <Dot className="w-12 h-12"/>  Contractors <Dot className="w-12 h-12"/>  Service businesses</p>
-        </section>
-
-        <section className="gap-4  lg:mb-28 mb-16 justify-center items-center flex flex-col" >
-            <p className='flex gap-2 text-xs font-bold text-green-700 uppercase tracking-wider pb-2'> Ready when you are</p>
-            <h2 className=" font-sans font-semibold text-[28px] max-w-lg text-center" > Your next quotation can take minutes, not another Word document. </h2>
-            <p> Set up your business details once and create your first quotation.</p>
-            <button className='flex justify-center items-center gap-4 text-white bg-green-700 p-2 rounded-[8px] text-[14px]  font-medium  '>Create your first quotation <ArrowRight className='h-3 w-3'/> </button>
-            <p className="text-xs text-gray-600 text-center"> Start with a quotation, invoice or receipt. No payment processing required.</p>
-
-        </section>
-
-        <footer className="gap-4 mb-3 grid lg:grid-cols-12  flex-col justify-center items-center "> 
-                <div className="grid lg:col-span-5 justify-start items-start"> 
-                     <div className="text-green-800 font-sans font-bold text-3xl flex justify-start items-start gap-0 tracking-tighter ">
-                                
-                        <img src={logo} alt="Logo" className="w-10 h-10 inline-block mr-2" />
-                        <a href="#Home">
-                            <h1>Docu<span className="text-black">Flow</span></h1>
-                        </a>           
-                    </div>
-                    <p className="text-xs text-gray-600"> simple documents for people doing real work </p>
-                    <p className="text-xs text-gray-600"> copyright &copy; {new Date().getFullYear()} All rights reserved</p>
-                </div>
-
-                <div className="grid lg:col-span-7 justify-end">
-                    <ul className="flex gap-2 text-xs lg:text-sm items-center justify-center text-green-700 "> 
-                        <li> <a href="/"> Home</a> </li> <Dot className="w-6 h-6"/> 
-                        <li> <a href="/"> How It Works</a> </li><Dot className="w-6 h-6"/> 
-                        <li> <a href="/"> Benefits</a> </li><Dot className="w-6 h-6"/> 
-                        <li> <a href="/"> Login</a> </li>
-                        
-                    </ul>    
-                </div>
-        </footer>
-     
-      
-    </div>
-    </div>
-  );
+  return <div id="home">
+    <a className="skip-link" href="#main-content">Skip to content</a><Header />
+    <main id="main-content" tabIndex={-1}>
+      <section className="hero container" aria-labelledby="hero-title"><div className="hero-copy"><p className="eyebrow">Quotations <ArrowRight size={14} aria-hidden="true" /> Invoices <ArrowRight size={14} aria-hidden="true" /> Receipts</p><h1 id="hero-title">Create it once.<br /><span>Keep the paperwork moving.</span></h1><p className="hero-description">Create a professional quotation, then carry the details into an invoice and receipt. No starting over.</p><div className="hero-actions"><button className="button" disabled aria-describedby="account-note">Create your first quotation <ArrowRight size={16} aria-hidden="true" /></button><a className="button button-secondary" href="#how-it-works">See how it works</a></div><p className="helper">Set up your business details once. Reuse them on your next document.</p><p id="account-note" className="availability">Account access is not available yet.</p></div><InvoiceDemo /></section>
+      <section className="section container" aria-labelledby="problem-title"><div className="section-heading"><p className="eyebrow">Less repetition</p><h2 id="problem-title">Your next invoice shouldn’t<br className="desktop-break" /> start from a blank page.</h2><p>You’ve already entered the client, the work and the agreed price. Keep those details moving with the job.</p></div><div className="comparison"><div><p className="comparison-label">The manual way</p><ol><li>Open an old file</li><li>Re-enter the details</li><li>Export and repeat later</li></ol></div><div className="connected-way"><p className="comparison-label">With DocuFlow</p><ol><li>Create a quotation</li><li>Convert to an invoice</li><li>Generate a receipt</li></ol></div></div></section>
+      <section id="how-it-works" className="section container" aria-labelledby="workflow-title"><div className="section-heading"><p className="eyebrow">How it works</p><h2 id="workflow-title">From quotation to receipt.<br />Without starting over.</h2></div><ol className="steps">{steps.map(([number, title, body], index) => <li key={number} className={index === 2 ? 'conversion-step' : ''}><span className="step-number">{number}</span><h3>{title}</h3><p>{body}</p>{index < 3 && <ArrowRight className="step-arrow" size={18} aria-hidden="true" />}</li>)}</ol></section>
+      <section id="benefits" className="section container" aria-labelledby="benefits-title"><div className="section-heading"><p className="eyebrow">Built for small businesses</p><h2 id="benefits-title">Less admin.<br />More time for actual work.</h2></div><div className="benefits">{benefits.map(([Icon, title, body]) => <div key={title}><Icon size={25} strokeWidth={1.5} aria-hidden="true" /><h3>{title}</h3><p>{body}</p></div>)}</div></section>
+      <section className="section container" aria-labelledby="chain-title"><div className="section-heading centered"><p className="eyebrow">One job, all the way through</p><h2 id="chain-title">New document. Same details.</h2><p>Each document keeps the relevant information from the one before it. The original stays right where it belongs.</p></div><ol className="document-chain">{[['Quotation', 'QUO-0012', 'Accepted'], ['Invoice', 'INV-0008', 'Payment recorded'], ['Receipt', 'REC-0004', 'Receipt created']].map(([type, ref, status], index) => <li key={ref}><div className="document-card"><div className="document-top"><span>{type}</span><Files size={18} aria-hidden="true" /></div><h3>{ref}</h3><p>Acacia Studio</p><p className="job-label">Brand & website project</p><strong className="document-amount">{money(total)}</strong><span className="document-status"><Check size={13} aria-hidden="true" />{status}</span></div>{index < 2 && <ArrowRight className="chain-arrow" size={20} aria-hidden="true" />}{index < 2 && <ArrowDown className="chain-arrow-mobile" size={20} aria-hidden="true" />}</li>)}</ol><p className="chain-note">Illustrative documents. Payment is recorded by your business, not processed by DocuFlow. You can also create an invoice or receipt directly.</p></section>
+      <section className="container final-section" aria-labelledby="final-title"><div className="final-cta"><p className="eyebrow">Ready when you are</p><h2 id="final-title">Create the document.<br />Reuse the work.</h2><p>Set up your business details once and create your first quotation.</p><button className="button" disabled aria-describedby="final-account-note">Get started <ArrowRight size={16} aria-hidden="true" /></button><button className="text-button" disabled>Log in</button><p id="final-account-note" className="availability">Account access is not available yet.</p></div></section>
+    </main>
+    <footer className="container public-footer"><div><Brand /><p>Connected quotations, invoices and receipts<br />for people doing real work.</p><p className="copyright">© {new Date().getFullYear()} DocuFlow</p></div><nav aria-label="Footer navigation"><a href="#how-it-works">How it works</a><a href="#benefits">Benefits</a><button className="text-button" disabled>Log in</button><button className="text-button" disabled>Create account</button></nav></footer>
+  </div>;
 }
