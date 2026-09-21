@@ -782,4 +782,3 @@ Extract components around behavior and reuse. Do not create a generic card compo
 - Authentication is quiet and focused.
 - Onboarding is structured but not administrative or accounting-heavy.
 - Shadows remain exceptional rather than becoming the default grouping mechanism.
-

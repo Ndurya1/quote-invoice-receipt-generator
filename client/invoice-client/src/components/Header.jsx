@@ -1,99 +1,40 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import logo from "../assets/Docu-logo.png";
+﻿import { useEffect, useRef, useState } from 'react';
+import { Menu, X } from 'lucide-react';
+import logo from '../assets/Docu-logo.png';
+
+export function Brand() {
+  return <a className="brand" href="#home" aria-label="DocuFlow home"><img src={logo} alt="" /><span>Docu<span className="brand-ink">Flow</span></span></a>;
+}
 
 export default function Header() {
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  return (
-    <>
-     
-      <div className="relative">
-        <header className="flex justify-between mx-10 items-center pl-2 pr-2 top-0 bg-white/60 p-3  text-green-800 relative z-20 font-sans ">
-          <div className="text-green-800 font-sans font-bold text-3xl flex justify-center items-center gap-0 tracking-tighter ">
-            
-            <img src={logo} alt="Logo" className="w-10 h-10 inline-block mr-2" />
-            <a href="#Home">
-              <h1>Docu<span className="text-black">Flow</span></h1>
-            </a>
-
-          </div>
-          
-         
-          <ul className="hidden md:flex gap-10">
-           
-            <li className="flex justify-center items-center   px-4 rounded-lg bg-[#245C3A] text-[14px]  text-white ">
-              <a href="#How-it-works">How It Works</a>
-            </li>
-            <li className="flex justify-center items-center   px-4 rounded-lg bg-[#245C3A] text-[14px]  text-white ">
-              <a href="#Benefits">Benefits</a>
-            </li>
-            <li className="flex justify-center items-center   px-4 rounded-lg bg-[#245C3A] text-[14px]  text-white py-2">
-              <a href="#Login">Login</a>
-            </li>
-           
-          </ul>
-
-        
-          <div
-            className="flex md:hidden justify-center items-center text-green-800 font-sans font-extrabold text-[25px] cursor-pointer  rounded-sm  px-2 py-1"
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            &#9776;
-          </div>
-        </header>
-
-      
-        <ul
-          className={`
-            md:hidden 
-            flex flex-col 
-            items-center 
-            text-center
-            absolute 
-            top-full 
-            left-0
-            w-full m-auto 
-            bg-green-800
-            text-white 
-            p-4 
-            gap-3 
-            transition-all duration-300 ease-in-out
-            z-10
-            ${menuOpen 
-              ? "opacity-100 translate-y-0" 
-              : "opacity-0 -translate-y-5 pointer-events-none"}
-          `}
-        >
-          <a
-            href="#How-it-works"
-            className="hover:bg-white hover:text-green-800 text-[14px] font-sans w-full py-2 rounded-lg "
-            onClick={() => setMenuOpen(false)} 
-          >
-            How It Works
-          </a>
-
-          <a
-           className="hover:bg-white hover:text-green-800 text-[14px] font-sans w-full py-2 rounded-lg "
-            href="#Benefits"
-            onClick={() => setMenuOpen(false)}
-          >
-            Benefits
-          </a>
-          <a
-            className="hover:bg-white hover:text-green-800 text-[14px] font-sans w-full py-2 rounded-lg "
-            href="#Login"
-            onClick={() => setMenuOpen(false)}
-          >
-            Login
-          </a>
-        
-        </ul>
+  const [open, setOpen] = useState(false);
+  const toggle = useRef(null);
+  const root = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const dismiss = (event) => {
+      if (event.key === 'Escape') { setOpen(false); toggle.current?.focus(); }
+      if (event.type === 'pointerdown' && !root.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('keydown', dismiss);
+    document.addEventListener('pointerdown', dismiss);
+    const media = window.matchMedia('(min-width: 768px)');
+    const resize = () => { if (media.matches) setOpen(false); };
+    media.addEventListener('change', resize);
+    return () => {
+      document.removeEventListener('keydown', dismiss);
+      document.removeEventListener('pointerdown', dismiss);
+      media.removeEventListener('change', resize);
+    };
+  }, [open]);
+  return <header className="public-header" ref={root}>
+    <nav className="container nav-row" aria-label="Main navigation">
+      <Brand />
+      <div className="desktop-links"><a href="#how-it-works">How it works</a><a href="#benefits">Benefits</a></div>
+      <div className="account-actions"><button className="text-button" disabled title="Account access is not available yet">Log in</button><button className="button nav-start" disabled title="Account creation is not available yet">Get started</button>
+        <button ref={toggle} className="menu-toggle" aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
       </div>
-    </>
-  );
+      <div id="mobile-navigation" className="mobile-links" hidden={!open}><a href="#how-it-works" onClick={() => setOpen(false)}>How it works</a><a href="#benefits" onClick={() => setOpen(false)}>Benefits</a><button className="button" disabled>Get started</button><p>Account access is not available yet.</p></div>
+    </nav>
+  </header>;
 }
-    
-  
-
-    

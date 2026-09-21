@@ -469,4 +469,3 @@ Keep components aligned to actual behavioral boundaries. Do not extract one-off 
 - Mixed-currency balances are not incorrectly summed.
 - Desktop, tablet, 360px mobile, keyboard navigation, long client names, loading, empty, and error states are accounted for.
 - The visual system uses one accent, restrained radii, structural borders, and minimal shadow.
-
