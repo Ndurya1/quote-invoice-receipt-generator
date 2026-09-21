@@ -29,6 +29,12 @@ class ReceiptListResponse(BaseModel):
     meta: ReceiptPageMeta
 
 
+class ReceiptConvert(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    issue_date: date
+
+
 class ReceiptCreate(BaseModel):
     model_config = ConfigDict(extra='forbid')
 

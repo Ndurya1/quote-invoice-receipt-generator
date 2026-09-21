@@ -591,8 +591,15 @@ Backend behavior:
 6. Preserve currency and relevant metadata.
 7. Recalculate totals.
 8. Link `source_invoice_id`.
-9. Optionally update Invoice status according to agreed product rule.
-10. Commit transaction.
+9. Leave the source Invoice unchanged; conversion does not mark it paid.
+10. Commit the Receipt, ReceiptItems, and number allocation atomically.
+
+Conversion is owner-scoped and rejects only `CANCELLED` invoices with 409
+`INVALID_INVOICE_STATUS`; missing or foreign invoices return 404
+`INVOICE_NOT_FOUND`. Multiple Receipts may be created from one Invoice, and
+each conversion receives the next shared Receipt number. Receipt metadata
+copies the Invoice owner, client, currency, tax, discount, and notes; the
+request supplies the Receipt issue date.
 
 Response:
 
