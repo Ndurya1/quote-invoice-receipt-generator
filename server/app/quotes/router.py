@@ -12,6 +12,8 @@ from app.accounts.models import User
 from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
+from app.pdf.context import build_quote_context
+from app.pdf.quote import render_quote_pdf
 from app.conversions.quote_invoice import convert_quote_to_invoice
 from app.quotes.models import QuoteStatus
 from app.quotes.queries import get_quote_for_user, paginate_quotes_for_user
@@ -20,6 +22,22 @@ from app.invoices.schemas import InvoiceDetail, InvoiceResponse
 from app.quotes.service import create_quote, delete_quote, transition_quote, update_quote
 
 router = APIRouter(prefix='/quotes', tags=['quotes'])
+
+
+@router.get('/{quote_id}/pdf', response_class=Response, responses={200: {'content': {'application/pdf': {}}}})
+def quote_pdf(
+    quote_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> Response:
+    context = build_quote_context(connection, user_id=user.id, quote_id=quote_id)
+    return Response(
+        content=render_quote_pdf(context), media_type='application/pdf',
+        headers={
+            'Cache-Control': 'no-store',
+            'Content-Disposition': f'attachment; filename="{context.document_number}.pdf"',
+        },
+    )
 
 
 @router.delete('/{quote_id}', status_code=204, response_class=Response)

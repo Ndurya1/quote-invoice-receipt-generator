@@ -13,6 +13,15 @@ from app.quotes.queries import get_quote_for_user
 from app.receipts.queries import get_receipt_for_user
 
 
+def _render_items(items) -> tuple[RenderItem, ...]:
+    return tuple(RenderItem(
+        description=item.description,
+        quantity=item.quantity,
+        unit_price=item.unit_price,
+        line_total=item.line_total,
+    ) for item in items)
+
+
 def _business(connection: Connection, *, user_id: UUID) -> BusinessProfile | None:
     return get_profile_for_user(connection, user_id)
 
@@ -32,7 +41,7 @@ def build_quote_context(
         discount_value=quote.discount_value, discount_amount=quote.discount_amount,
         total=quote.total, status=quote.status.value, notes=quote.notes, terms=quote.terms,
         client=loaded.client, business=_business(connection, user_id=user_id),
-        items=tuple(RenderItem.model_validate(item) for item in loaded.items),
+        items=_render_items(loaded.items),
         created_at=quote.created_at,
     )
 
@@ -53,7 +62,7 @@ def build_invoice_context(
         total=invoice.total, status=invoice.status.value, notes=invoice.notes, terms=invoice.terms,
         client=_client_from_invoice(connection, user_id=user_id, client_id=invoice.client_id),
         business=_business(connection, user_id=user_id),
-        items=tuple(RenderItem.model_validate(item) for item in loaded.items),
+        items=_render_items(loaded.items),
         created_at=invoice.created_at,
     )
 
@@ -73,7 +82,7 @@ def build_receipt_context(
         discount_value=receipt.discount_value, discount_amount=receipt.discount_amount,
         total=receipt.total, status=None, notes=receipt.notes, terms=None,
         client=loaded.client, business=_business(connection, user_id=user_id),
-        items=tuple(RenderItem.model_validate(item) for item in loaded.items),
+        items=_render_items(loaded.items),
         created_at=receipt.created_at,
     )
 
