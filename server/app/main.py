@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import router
 from app.common.errors import register_exception_handlers
@@ -13,6 +14,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         description="generate quotes, invoices and receipts all in one place",
         # Framework debug responses expose tracebacks and bypass our 500 handler.
         debug=False,
+    )
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_origins),
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["Authorization", "Content-Type"],
     )
     application.state.settings = settings
     register_exception_handlers(application)

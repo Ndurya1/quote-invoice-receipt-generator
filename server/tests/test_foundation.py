@@ -39,3 +39,20 @@ class ApplicationTests(unittest.TestCase):
             with self.subTest(values=values), patch.dict("os.environ", values, clear=True):
                 with self.assertRaises(ValueError):
                     Settings.from_environment()
+
+    @patch.dict("os.environ", {"CORS_ALLOWED_ORIGINS": "https://app.example.com, https://admin.example.com/"}, clear=True)
+    def test_cors_origins_are_loaded_from_environment(self):
+        settings = Settings.from_environment()
+        self.assertEqual(settings.cors_origins, ("https://app.example.com", "https://admin.example.com"))
+
+    @patch.dict("os.environ", {"CORS_ALLOWED_ORIGINS": "*"}, clear=True)
+    def test_wildcard_cors_is_rejected(self):
+        with self.assertRaises(ValueError):
+            Settings.from_environment()
+
+    def test_cors_allows_configured_origin_only(self):
+        with TestClient(create_app(Settings(environment="test"))) as client:
+            allowed = client.get("/health", headers={"Origin": "http://localhost:5173"})
+            denied = client.get("/health", headers={"Origin": "https://untrusted.example"})
+        self.assertEqual(allowed.headers.get("access-control-allow-origin"), "http://localhost:5173")
+        self.assertNotIn("access-control-allow-origin", denied.headers)

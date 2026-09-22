@@ -20,6 +20,7 @@ server command, not by importing the application.
 | APP_NAME | quote-invoice-receipt generator API | Non-empty title |
 | APP_ENV | development | development, test, production |
 | APP_DEBUG | false | true, false; retained in settings, never enables HTTP tracebacks |
+| CORS_ALLOWED_ORIGINS | local Vite/React origins in development | comma-separated absolute frontend origins; no wildcard |
 
 `GET /health` reports application health. `GET /api/v1` resolves the API
 namespace. Neither endpoint checks database connectivity. Starting the API never
