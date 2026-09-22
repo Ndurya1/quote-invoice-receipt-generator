@@ -225,3 +225,56 @@ class EndToEndWorkflowTests(unittest.TestCase):
         self.assertEqual(retrieved.status_code, 200)
         self.assertEqual(retrieved.json()["data"], receipt)
         self.assert_pdf("receipts", receipt, token)
+
+    def test_adversarial_financial_requests_are_rejected_without_persistence(self):
+        token = self.owner_token()
+        client = self.create_client(token)
+        self.client.post("/api/v1/auth/register", json={
+            "name": "Other User", "email": "other@example.com", "password": "OtherPassword123",
+        })
+        other_token = self.login(email="other@example.com", password="OtherPassword123").json()["data"]["access_token"]
+        foreign_client = self.create_client(other_token, "Foreign Client")
+
+        cases = [
+            (
+                "/api/v1/quotes",
+                self.quote_payload(client["id"], total="999999.99"),
+                422,
+                "VALIDATION_ERROR",
+            ),
+            (
+                "/api/v1/invoices",
+                self.invoice_payload(client["id"], items=[{
+                    "description": "Negative", "quantity": "-1", "unit_price": "100",
+                }]),
+                422,
+                "VALIDATION_ERROR",
+            ),
+            (
+                "/api/v1/receipts",
+                self.receipt_payload(client["id"], discount_type="PERCENTAGE", discount_value="101"),
+                422,
+                "VALIDATION_ERROR",
+            ),
+            (
+                "/api/v1/quotes",
+                self.quote_payload(client["id"], expiry_date="2026-09-14"),
+                422,
+                "VALIDATION_ERROR",
+            ),
+            (
+                "/api/v1/invoices",
+                self.invoice_payload(foreign_client["id"]),
+                404,
+                "CLIENT_NOT_FOUND",
+            ),
+        ]
+        for path, payload, status, code in cases:
+            with self.subTest(path=path, code=code):
+                response = self.client.post(path, json=payload, headers=self.headers(token))
+                self.assertEqual(response.status_code, status, response.text)
+                self.assertEqual(response.json()["error"]["code"], code)
+
+        self.assertEqual(self.connection.execute("SELECT count(*) FROM quotes").fetchone()[0], 0)
+        self.assertEqual(self.connection.execute("SELECT count(*) FROM invoices").fetchone()[0], 0)
+        self.assertEqual(self.connection.execute("SELECT count(*) FROM receipts").fetchone()[0], 0)
