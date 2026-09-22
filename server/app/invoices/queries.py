@@ -7,6 +7,7 @@ from psycopg import Connection
 from psycopg.rows import class_row
 
 from app.invoices.models import Invoice, InvoiceItem
+from app.common.pagination import validate_pagination
 
 
 @dataclass(frozen=True)
@@ -51,8 +52,7 @@ def get_invoice_for_user(
 def paginate_invoices_for_user(
     connection: Connection, *, user_id: UUID, page: int, page_size: int,
 ) -> tuple[list[LoadedInvoice], int]:
-    if not 1 <= page <= 2147483647 or not 1 <= page_size <= 100:
-        raise ValueError('Invalid invoice pagination bounds')
+    pagination = validate_pagination(page, page_size)
     total = connection.execute(
         'SELECT count(*) FROM invoices WHERE user_id = %s', (user_id,)
     ).fetchone()[0]
@@ -61,7 +61,7 @@ def paginate_invoices_for_user(
             cursor.execute(
                 'SELECT * FROM invoices WHERE user_id = %s '
                 'ORDER BY created_at DESC, id DESC LIMIT %s OFFSET %s FOR SHARE',
-                (user_id, page_size, (page - 1) * page_size),
+                (user_id, pagination.page_size, pagination.offset),
             )
             invoices = cursor.fetchall()
         return _load_related(connection, user_id=user_id, invoices=invoices), total

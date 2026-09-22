@@ -7,6 +7,7 @@ from psycopg import Connection
 from psycopg.rows import class_row
 
 from app.clients.models import Client
+from app.common.pagination import validate_pagination
 from app.quotes.models import Quote, QuoteItem
 
 
@@ -52,14 +53,13 @@ def get_quote_for_user(
 def paginate_quotes_for_user(
     connection: Connection, *, user_id: UUID, page: int, page_size: int,
 ) -> tuple[list[LoadedQuote], int]:
-    if not 1 <= page <= 2147483647 or not 1 <= page_size <= 100:
-        raise ValueError('Invalid quote pagination bounds')
+    pagination = validate_pagination(page, page_size)
     total = connection.execute('SELECT count(*) FROM quotes WHERE user_id = %s',
                                (user_id,)).fetchone()[0]
     with connection.transaction():
         with connection.cursor(row_factory=class_row(Quote)) as cursor:
             cursor.execute('SELECT * FROM quotes WHERE user_id = %s '
                            'ORDER BY created_at DESC, id DESC LIMIT %s OFFSET %s FOR SHARE',
-                           (user_id, page_size, (page - 1) * page_size))
+                           (user_id, pagination.page_size, pagination.offset))
             quotes = cursor.fetchall()
         return _load_related(connection, user_id=user_id, quotes=quotes), total

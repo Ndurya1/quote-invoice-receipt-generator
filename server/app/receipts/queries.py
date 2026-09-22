@@ -5,6 +5,7 @@ from psycopg import Connection
 from psycopg.rows import class_row
 
 from app.clients.models import Client
+from app.common.pagination import validate_pagination
 from app.receipts.models import Receipt, ReceiptItem
 
 
@@ -52,8 +53,7 @@ def get_receipt_for_user(
 def paginate_receipts_for_user(
     connection: Connection, *, user_id: UUID, page: int, page_size: int,
 ) -> tuple[list[LoadedReceipt], int]:
-    if not 1 <= page <= 2147483647 or not 1 <= page_size <= 100:
-        raise ValueError('Invalid receipt pagination bounds')
+    pagination = validate_pagination(page, page_size)
     total = connection.execute('SELECT count(*) FROM receipts WHERE user_id = %s',
                                (user_id,)).fetchone()[0]
     with connection.transaction():
@@ -61,7 +61,7 @@ def paginate_receipts_for_user(
             cursor.execute(
                 'SELECT * FROM receipts WHERE user_id = %s '
                 'ORDER BY created_at DESC, id DESC LIMIT %s OFFSET %s FOR SHARE',
-                (user_id, page_size, (page - 1) * page_size),
+                (user_id, pagination.page_size, pagination.offset),
             )
             receipts = cursor.fetchall()
         return _load_related(connection, user_id=user_id, receipts=receipts), total
