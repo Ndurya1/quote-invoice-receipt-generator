@@ -1,40 +1,41 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { routePaths } from '../utils/routePaths';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import AccountMenu from '../components/navigation/AccountMenu.jsx';
+import ApplicationBrand from '../components/navigation/ApplicationBrand.jsx';
+import RouteFocusManager from '../components/navigation/RouteFocusManager.jsx';
+import { mobileNavigation, primaryNavigation, secondaryNavigation, isNavigationItemActive } from '../navigation/navigation.js';
 
-const navigation = [
-  { label: 'Dashboard', to: routePaths.dashboard, end: true },
-  { label: 'Documents', to: routePaths.documents },
-  { label: 'Clients', to: routePaths.clients },
-];
+function NavigationLink({ item, mobile = false, pathname }) {
+  const active = isNavigationItemActive(item, pathname);
+  const className = mobile ? 'app-mobile-nav__link' : 'app-nav__link';
+  return <NavLink end={item.end} to={item.to} className={`${className}${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}>
+    {item.label}
+  </NavLink>;
+}
 
 export default function AppLayout() {
-  return (
-    <div className="app-shell">
-      <a className="skip-link" href="#main-content">Skip to content</a>
-      <aside className="app-sidebar" aria-label="Primary navigation">
-        <NavLink className="app-brand" to={routePaths.dashboard}>DocuFlow</NavLink>
-        <nav className="app-nav">
-          {navigation.map((item) => (
-            <NavLink key={item.to} end={item.end} to={item.to} className={({ isActive }) => isActive ? 'app-nav__link is-active' : 'app-nav__link'}>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-        <nav className="app-nav app-nav--secondary" aria-label="Secondary navigation">
-          <NavLink to={routePaths.businessSettings} className={({ isActive }) => isActive ? 'app-nav__link is-active' : 'app-nav__link'}>Business settings</NavLink>
-          <NavLink to={routePaths.accountSettings} className={({ isActive }) => isActive ? 'app-nav__link is-active' : 'app-nav__link'}>Account</NavLink>
-        </nav>
-      </aside>
-      <header className="app-mobile-header">
-        <NavLink className="app-brand" to={routePaths.dashboard}>DocuFlow</NavLink>
-      </header>
-      <main id="main-content" className="app-main"><Outlet /></main>
-      <nav className="app-mobile-nav" aria-label="Mobile navigation">
-        <NavLink end to={routePaths.dashboard} className={({ isActive }) => isActive ? 'app-mobile-nav__link is-active' : 'app-mobile-nav__link'}>Home</NavLink>
-        <NavLink to={routePaths.documents} className={({ isActive }) => isActive ? 'app-mobile-nav__link is-active' : 'app-mobile-nav__link'}>Documents</NavLink>
-        <NavLink to={routePaths.clients} className={({ isActive }) => isActive ? 'app-mobile-nav__link is-active' : 'app-mobile-nav__link'}>Clients</NavLink>
-        <NavLink to={routePaths.accountSettings} className={({ isActive }) => isActive ? 'app-mobile-nav__link is-active' : 'app-mobile-nav__link'}>More</NavLink>
+  const { pathname } = useLocation();
+  return <div className="app-shell">
+    <a className="skip-link" href="#main-content">Skip to content</a>
+    <aside className="app-sidebar" aria-label="Primary navigation">
+      <ApplicationBrand />
+      <nav className="app-nav" aria-label="Primary navigation">
+        {primaryNavigation.map((item) => <NavigationLink key={item.to} item={item} pathname={pathname} />)}
       </nav>
-    </div>
-  );
+      <nav className="app-nav app-nav--secondary" aria-label="Settings navigation">
+        {secondaryNavigation.map((item) => <NavigationLink key={item.to} item={item} pathname={pathname} />)}
+      </nav>
+      <div className="app-sidebar__account"><AccountMenu /></div>
+    </aside>
+    <header className="app-mobile-header">
+      <ApplicationBrand />
+      <AccountMenu />
+    </header>
+    <main id="main-content" className="app-main" tabIndex={-1}>
+      <RouteFocusManager />
+      <Outlet />
+    </main>
+    <nav className="app-mobile-nav" aria-label="Mobile navigation">
+      {mobileNavigation.map((item) => <NavigationLink key={item.to} item={item} mobile pathname={pathname} />)}
+    </nav>
+  </div>;
 }
