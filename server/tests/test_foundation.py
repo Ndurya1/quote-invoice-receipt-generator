@@ -50,6 +50,32 @@ class ApplicationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Settings.from_environment()
 
+    @patch.dict("os.environ", {"APP_ENV": "production", "APP_DEBUG": "true"}, clear=True)
+    def test_production_rejects_debug_mode(self):
+        with self.assertRaises(ValueError):
+            Settings.from_environment()
+
+    @patch.dict(
+        "os.environ",
+        {
+            "APP_ENV": "production",
+            "APP_DEBUG": "false",
+            "CORS_ALLOWED_ORIGINS": "https://app.example.com",
+            "ALLOWED_HOSTS": "api.example.com",
+            "JWT_SECRET_KEY": "production-test-secret-that-is-at-least-32-bytes-long",
+        },
+        clear=True,
+    )
+    def test_production_configuration_is_validated(self):
+        app = create_app()
+        self.assertEqual(app.state.settings.environment, "production")
+        self.assertTrue(app.state.settings.force_https)
+
+    @patch.dict("os.environ", {"APP_ENV": "production", "APP_DEBUG": "false"}, clear=True)
+    def test_production_requires_explicit_origins_and_hosts(self):
+        with self.assertRaises(ValueError):
+            create_app()
+
     def test_cors_allows_configured_origin_only(self):
         with TestClient(create_app(Settings(environment="test"))) as client:
             allowed = client.get("/health", headers={"Origin": "http://localhost:5173"})
