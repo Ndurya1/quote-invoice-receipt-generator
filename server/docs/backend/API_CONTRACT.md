@@ -707,6 +707,12 @@ Example response:
 }
 ```
 
+Each recent document contains `type` (`quote`, `invoice`, or `receipt`), `id`,
+`document_number`, `client_id`, `client_name`, `issue_date`, `currency`,
+`total`, `status`, and `created_at`. Receipt `status` is null because receipts
+do not have a lifecycle status. At most five recent documents are returned,
+ordered by creation time descending with UUID descending as a tie-breaker.
+
 ---
 
 ## 13. Filtering and Pagination
