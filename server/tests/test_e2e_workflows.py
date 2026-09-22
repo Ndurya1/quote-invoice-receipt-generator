@@ -205,3 +205,23 @@ class EndToEndWorkflowTests(unittest.TestCase):
         self.assertEqual(retrieved.json()["data"], receipt)
         self.assert_pdf("invoices", invoice, token)
         self.assert_pdf("receipts", receipt, token)
+
+    def test_direct_receipt_without_invoice_is_retrievable_and_downloadable(self):
+        token = self.owner_token()
+        client = self.create_client(token)
+        response = self.client.post(
+            "/api/v1/receipts",
+            json=self.receipt_payload(client["id"]), headers=self.headers(token),
+        )
+        self.assertEqual(response.status_code, 201, response.text)
+        receipt = response.json()["data"]
+        self.assertIsNone(receipt["source_invoice_id"])
+        self.assertEqual(receipt["receipt_number"], "RCT-0001")
+        self.assertEqual(receipt["total"], "106.00")
+
+        retrieved = self.client.get(
+            f"/api/v1/receipts/{receipt['id']}", headers=self.headers(token),
+        )
+        self.assertEqual(retrieved.status_code, 200)
+        self.assertEqual(retrieved.json()["data"], receipt)
+        self.assert_pdf("receipts", receipt, token)
