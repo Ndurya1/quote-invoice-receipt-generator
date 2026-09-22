@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import LoadingState from '../components/feedback/LoadingState.jsx';
 import { routePaths } from '../utils/routePaths.js';
 import { authStatuses, loginRedirect } from './authState.js';
+import { isAuthPreviewEnabled } from './authPreview.js';
 import { useAuth } from './useAuth.js';
 
 function AuthLoading() {
@@ -10,6 +11,7 @@ function AuthLoading() {
 
 export function PublicOnlyRoute() {
   const { status } = useAuth();
+  if (isAuthPreviewEnabled) return <Outlet />;
   if (status === authStatuses.loading) return <AuthLoading />;
   if (status === authStatuses.ready) return <Navigate replace to={routePaths.dashboard} />;
   if (status === authStatuses.needsOnboarding) return <Navigate replace to={routePaths.onboardingBusiness} />;
@@ -18,15 +20,19 @@ export function PublicOnlyRoute() {
 
 export function OnboardingRoute() {
   const { status } = useAuth();
+  const location = useLocation();
+  const isCompletion = location.pathname === routePaths.onboardingComplete;
+  if (isAuthPreviewEnabled) return <Outlet />;
   if (status === authStatuses.loading) return <AuthLoading />;
   if (status === authStatuses.anonymous) return <Navigate replace to={loginRedirect(routePaths.onboardingBusiness)} />;
-  if (status === authStatuses.ready) return <Navigate replace to={routePaths.dashboard} />;
+  if (status === authStatuses.ready && !isCompletion) return <Navigate replace to={routePaths.dashboard} />;
   return <Outlet />;
 }
 
 export function ProtectedRoute() {
   const { status } = useAuth();
   const location = useLocation();
+  if (isAuthPreviewEnabled) return <Outlet />;
   if (status === authStatuses.loading) return <AuthLoading />;
   if (status === authStatuses.anonymous) return <Navigate replace to={loginRedirect(`${location.pathname}${location.search}`)} />;
   if (status === authStatuses.needsOnboarding) return <Navigate replace to={routePaths.onboardingBusiness} />;

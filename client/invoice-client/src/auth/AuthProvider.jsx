@@ -7,6 +7,8 @@ import { useDataCache } from '../app/useDataCache.js';
 import { authContext } from './authContext.js';
 import { authStatuses, resolveAuthStatus } from './authState.js';
 import { subscribeSessionExpired } from './sessionEvents.js';
+import { clearOnboardingDraft } from '../onboarding/onboardingStorage.js';
+import { isAuthPreviewEnabled, previewBusinessProfile, previewUser } from './authPreview.js';
 
 function isMissingBusinessProfile(error) {
   return error instanceof ApiError && error.code === 'BUSINESS_PROFILE_NOT_FOUND';
@@ -18,16 +20,34 @@ export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [businessProfile, setBusinessProfile] = useState(null);
   const [sessionMessage, setSessionMessage] = useState('');
+  const [previewComplete, setPreviewComplete] = useState(false);
 
   const clearLocalSession = useCallback(() => {
     apiClient.sessionStore.clear();
     cache.clear();
+    clearOnboardingDraft();
+    setPreviewComplete(false);
     setUser(null);
     setBusinessProfile(null);
     setStatus(authStatuses.anonymous);
   }, [cache]);
 
   const bootstrap = useCallback(async () => {
+    if (isAuthPreviewEnabled) {
+      const profile = previewComplete ? previewBusinessProfile({
+        business_name: 'Developer Preview Business',
+        email: previewUser.email,
+        phone: null,
+        address: null,
+        tax_number: null,
+        default_currency: 'KES',
+      }) : null;
+      const previewStatus = resolveAuthStatus({ hasAccessToken: true, user: previewUser, businessProfile: profile });
+      setUser(previewUser);
+      setBusinessProfile(profile);
+      setStatus(previewStatus);
+      return { status: previewStatus, user: previewUser, businessProfile: profile };
+    }
     const accessToken = apiClient.sessionStore.getAccessToken();
     if (!accessToken) {
       setUser(null);
@@ -60,7 +80,7 @@ export default function AuthProvider({ children }) {
       clearLocalSession();
       throw error;
     }
-  }, [clearLocalSession]);
+  }, [clearLocalSession, previewComplete]);
 
   useEffect(() => {
     let active = true;
@@ -79,11 +99,13 @@ export default function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials) => {
     setSessionMessage('');
+    if (isAuthPreviewEnabled) return bootstrap();
     await authApi.login(credentials);
     return bootstrap();
   }, [bootstrap]);
 
   const registerAndLogin = useCallback(async (values) => {
+    if (isAuthPreviewEnabled) return bootstrap();
     await authApi.register({ name: values.name.trim(), email: values.email.trim().toLowerCase(), password: values.password });
     try {
       return await login({ email: values.email.trim().toLowerCase(), password: values.password });
@@ -91,7 +113,20 @@ export default function AuthProvider({ children }) {
       error.accountCreated = true;
       throw error;
     }
-  }, [login]);
+  }, [bootstrap, login]);
+
+  const completeOnboarding = useCallback(async (payload) => {
+    if (isAuthPreviewEnabled) {
+      const profile = previewBusinessProfile(payload);
+      setPreviewComplete(true);
+      setUser(previewUser);
+      setBusinessProfile(profile);
+      setStatus(authStatuses.ready);
+      return { status: authStatuses.ready, user: previewUser, businessProfile: profile };
+    }
+    await businessProfileApi.replaceBusinessProfile(payload);
+    return bootstrap();
+  }, [bootstrap]);
 
   const logout = useCallback(async () => {
     authApi.logout();
@@ -106,8 +141,10 @@ export default function AuthProvider({ children }) {
     bootstrap,
     login,
     registerAndLogin,
+    completeOnboarding,
     logout,
-  }), [bootstrap, businessProfile, login, logout, registerAndLogin, sessionMessage, status, user]);
+    isPreviewMode: isAuthPreviewEnabled,
+  }), [bootstrap, businessProfile, completeOnboarding, login, logout, registerAndLogin, sessionMessage, status, user]);
 
   return <authContext.Provider value={value}>{children}</authContext.Provider>;
 }
