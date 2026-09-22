@@ -51,3 +51,23 @@ class DatabaseConstraintTests(unittest.TestCase):
                     ).fetchone()[0],
                     2,
                 )
+
+    def test_quote_expiry_cannot_precede_issue_date(self):
+        with self.assertRaises(errors.CheckViolation):
+            self.connection.execute(
+                '''INSERT INTO quotes
+                   (user_id, client_id, quote_number, issue_date, expiry_date, currency, subtotal, total)
+                   VALUES (%s, %s, 'QT-DATE', DATE '2026-09-15', DATE '2026-09-14', 'KES', 0, 0)''',
+                (self.owner.id, self.owner_client),
+            )
+        self.assertEqual(self.connection.execute('SELECT count(*) FROM quotes').fetchone()[0], 0)
+
+    def test_invoice_due_date_cannot_precede_issue_date(self):
+        with self.assertRaises(errors.CheckViolation):
+            self.connection.execute(
+                '''INSERT INTO invoices
+                   (user_id, client_id, invoice_number, issue_date, due_date, currency, subtotal, total)
+                   VALUES (%s, %s, 'INV-DATE', DATE '2026-09-15', DATE '2026-09-14', 'KES', 0, 0)''',
+                (self.owner.id, self.owner_client),
+            )
+        self.assertEqual(self.connection.execute('SELECT count(*) FROM invoices').fetchone()[0], 0)
