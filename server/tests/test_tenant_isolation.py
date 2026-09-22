@@ -119,3 +119,36 @@ class TenantIsolationTests(unittest.TestCase):
         self.assertEqual(owner_read.status_code, 200)
         self.assertEqual(owner_read.json()['data']['status'], 'DRAFT')
         self.assertEqual(owner_read.json()['data']['notes'], None)
+
+    def test_foreign_invoice_read_update_delete_actions_convert_and_pdf_are_not_visible(self):
+        invoice = self.create_invoice()
+        invoice_id = invoice['id']
+        operations = [
+            ('read', lambda: self.client.get(f'/api/v1/invoices/{invoice_id}', headers=self.other_headers)),
+            ('patch', lambda: self.client.patch(
+                f'/api/v1/invoices/{invoice_id}', json={'notes': 'Hijacked'}, headers=self.other_headers,
+            )),
+            ('delete', lambda: self.client.delete(f'/api/v1/invoices/{invoice_id}', headers=self.other_headers)),
+            ('send', lambda: self.client.post(f'/api/v1/invoices/{invoice_id}/send', headers=self.other_headers)),
+            ('mark-paid', lambda: self.client.post(
+                f'/api/v1/invoices/{invoice_id}/mark-paid', headers=self.other_headers,
+            )),
+            ('cancel', lambda: self.client.post(
+                f'/api/v1/invoices/{invoice_id}/cancel', headers=self.other_headers,
+            )),
+            ('convert', lambda: self.client.post(
+                f'/api/v1/invoices/{invoice_id}/convert', json={'issue_date': '2026-09-15'},
+                headers=self.other_headers,
+            )),
+            ('pdf', lambda: self.client.get(f'/api/v1/invoices/{invoice_id}/pdf', headers=self.other_headers)),
+        ]
+        for name, operation in operations:
+            with self.subTest(operation=name):
+                response = operation()
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()['error']['code'], 'INVOICE_NOT_FOUND')
+
+        owner_read = self.client.get(f'/api/v1/invoices/{invoice_id}', headers=self.owner_headers)
+        self.assertEqual(owner_read.status_code, 200)
+        self.assertEqual(owner_read.json()['data']['status'], 'DRAFT')
+        self.assertIsNone(owner_read.json()['data']['notes'])
