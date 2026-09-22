@@ -1,9 +1,11 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import logo from '../assets/Docu-logo.png';
+import { routePaths } from '../utils/routePaths.js';
 
 export function Brand() {
-  return <a className="brand" href="#home" aria-label="DocuFlow home"><img src={logo} alt="" /><span>Docu<span className="brand-ink">Flow</span></span></a>;
+  return <Link className="brand" to={routePaths.home} aria-label="DocuFlow home"><img src={logo} alt="" /><span>Docu<span className="brand-ink">Flow</span></span></Link>;
 }
 
 export default function Header() {
@@ -31,10 +33,10 @@ export default function Header() {
     <nav className="container nav-row" aria-label="Main navigation">
       <Brand />
       <div className="desktop-links"><a href="#how-it-works">How it works</a><a href="#benefits">Benefits</a></div>
-      <div className="account-actions"><button className="text-button" disabled title="Account access is not available yet">Log in</button><button className="button nav-start" disabled title="Account creation is not available yet">Get started</button>
+      <div className="account-actions"><Link className="text-button" to={routePaths.login}>Log in</Link><Link className="button nav-start" to={routePaths.register}>Get started</Link>
         <button ref={toggle} className="menu-toggle" aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
       </div>
-      <div id="mobile-navigation" className="mobile-links" hidden={!open}><a href="#how-it-works" onClick={() => setOpen(false)}>How it works</a><a href="#benefits" onClick={() => setOpen(false)}>Benefits</a><button className="button" disabled>Get started</button><p>Account access is not available yet.</p></div>
+      <div id="mobile-navigation" className="mobile-links" hidden={!open}><a href="#how-it-works" onClick={() => setOpen(false)}>How it works</a><a href="#benefits" onClick={() => setOpen(false)}>Benefits</a><Link className="button" to={routePaths.register} onClick={() => setOpen(false)}>Get started</Link><Link className="text-button" to={routePaths.login} onClick={() => setOpen(false)}>Log in</Link></div>
     </nav>
   </header>;
 }

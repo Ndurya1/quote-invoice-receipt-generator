@@ -1,11 +1,14 @@
 import { Route, Routes } from 'react-router-dom';
 import { routePaths } from '../utils/routePaths';
+import { OnboardingRoute, ProtectedRoute, PublicOnlyRoute } from '../auth/routeGuards.jsx';
 import AppLayout from '../layouts/AppLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import OnboardingLayout from '../layouts/OnboardingLayout';
 import PublicLayout from '../layouts/PublicLayout';
 import LandingPage from '../pages/LandingPage';
 import NotFoundPage from '../pages/NotFoundPage';
+import LoginPage from '../pages/auth/LoginPage.jsx';
+import RegisterPage from '../pages/auth/RegisterPage.jsx';
 import RoutePlaceholderPage from '../pages/RoutePlaceholderPage';
 
 function Placeholder({ title, description }) {
@@ -19,18 +22,23 @@ export default function AppRoutes() {
         <Route path={routePaths.home} element={<LandingPage />} />
       </Route>
 
-      <Route element={<AuthLayout />}>
-        <Route path={routePaths.register} element={<Placeholder title="Create your account" description="Registration is the next implementation slice." />} />
-        <Route path={routePaths.login} element={<Placeholder title="Welcome back" description="Login is the next implementation slice." />} />
+      <Route element={<PublicOnlyRoute />}>
+        <Route element={<AuthLayout />}>
+          <Route path={routePaths.register} element={<RegisterPage />} />
+          <Route path={routePaths.login} element={<LoginPage />} />
+        </Route>
       </Route>
 
-      <Route element={<OnboardingLayout />}>
-        <Route path={routePaths.onboardingBusiness} element={<Placeholder title="Business details" description="Business setup is ready for the onboarding slice." />} />
-        <Route path={routePaths.onboardingDefaults} element={<Placeholder title="Document defaults" description="Document defaults are ready for the onboarding slice." />} />
-        <Route path={routePaths.onboardingComplete} element={<Placeholder title="Your business details are ready" description="Setup completion is ready for the onboarding slice." />} />
+      <Route element={<OnboardingRoute />}>
+        <Route element={<OnboardingLayout />}>
+          <Route path={routePaths.onboardingBusiness} element={<Placeholder title="Business details" description="Business setup is ready for the onboarding slice." />} />
+          <Route path={routePaths.onboardingDefaults} element={<Placeholder title="Document defaults" description="Document defaults are ready for the onboarding slice." />} />
+          <Route path={routePaths.onboardingComplete} element={<Placeholder title="Your business details are ready" description="Setup completion is ready for the onboarding slice." />} />
+        </Route>
       </Route>
 
-      <Route element={<AppLayout />}>
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
         <Route path={routePaths.dashboard} element={<Placeholder title="Dashboard" description="The authenticated dashboard is the next implementation slice." />} />
         <Route path={routePaths.documents} element={<Placeholder title="Documents" description="The unified documents workspace is ready for its feature slice." />} />
         <Route path={routePaths.quotationsNew} element={<Placeholder title="Create quotation" description="Quotation creation is ready for its feature slice." />} />
@@ -48,6 +56,7 @@ export default function AppRoutes() {
         <Route path={routePaths.clientEdit} element={<Placeholder title="Edit client" description="Client editing is ready for its feature slice." />} />
         <Route path={routePaths.businessSettings} element={<Placeholder title="Business settings" description="Business settings are ready for their feature slice." />} />
         <Route path={routePaths.accountSettings} element={<Placeholder title="Account" description="Account settings are ready for their feature slice." />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
