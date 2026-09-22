@@ -23,6 +23,7 @@ server command, not by importing the application.
 | CORS_ALLOWED_ORIGINS | local Vite/React origins in development | comma-separated absolute frontend origins; no wildcard |
 | ALLOWED_HOSTS | unrestricted in development | comma-separated hostnames; required in production |
 | APP_FORCE_HTTPS | false | true in production; redirects plain HTTP requests |
+| LOG_LEVEL | INFO | DEBUG, INFO, WARNING, ERROR, or CRITICAL |
 
 `GET /health` reports application health. `GET /api/v1` resolves the API
 namespace. Neither endpoint checks database connectivity. Starting the API never

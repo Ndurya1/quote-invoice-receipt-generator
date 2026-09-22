@@ -5,12 +5,14 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1 import router
 from app.common.errors import register_exception_handlers
+from app.common.logging_config import configure_logging
 from app.common.settings import Settings
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings if settings is not None else Settings.from_environment()
     settings.validate_for_production()
+    configure_logging()
     application = FastAPI(
         title=settings.app_name,
         version="1.0.0",

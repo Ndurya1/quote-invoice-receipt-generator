@@ -1,5 +1,6 @@
 """Public domain errors and centralized HTTP exception responses."""
 
+import logging
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -9,6 +10,9 @@ from fastapi.utils import is_body_allowed_for_status_code
 from starlette.exceptions import HTTPException
 
 from app.common.responses import error_response
+
+
+logger = logging.getLogger("app.errors")
 
 
 class DomainError(Exception):
@@ -80,6 +84,10 @@ async def http_error_handler(request: Request, exc: HTTPException) -> Response:
 
 
 async def unexpected_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.error(
+        "Unhandled application error method=%s path=%s error_type=%s",
+        request.method, request.url.path, type(exc).__name__,
+    )
     return error_response(
         "INTERNAL_SERVER_ERROR", "An unexpected server error occurred.", status_code=500,
     )
