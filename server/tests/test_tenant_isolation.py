@@ -90,3 +90,32 @@ class TenantIsolationTests(unittest.TestCase):
         owner_read = self.client.get(f'/api/v1/clients/{client_id}', headers=self.owner_headers)
         self.assertEqual(owner_read.status_code, 200)
         self.assertEqual(owner_read.json()['data']['name'], 'Owner Client')
+
+    def test_foreign_quote_read_update_delete_actions_convert_and_pdf_are_not_visible(self):
+        quote = self.create_quote()
+        quote_id = quote['id']
+        operations = [
+            ('read', lambda: self.client.get(f'/api/v1/quotes/{quote_id}', headers=self.other_headers)),
+            ('patch', lambda: self.client.patch(
+                f'/api/v1/quotes/{quote_id}', json={'notes': 'Hijacked'}, headers=self.other_headers,
+            )),
+            ('delete', lambda: self.client.delete(f'/api/v1/quotes/{quote_id}', headers=self.other_headers)),
+            ('send', lambda: self.client.post(f'/api/v1/quotes/{quote_id}/send', headers=self.other_headers)),
+            ('accept', lambda: self.client.post(f'/api/v1/quotes/{quote_id}/accept', headers=self.other_headers)),
+            ('reject', lambda: self.client.post(f'/api/v1/quotes/{quote_id}/reject', headers=self.other_headers)),
+            ('convert', lambda: self.client.post(
+                f'/api/v1/quotes/{quote_id}/convert', json={'issue_date': '2026-09-15'},
+                headers=self.other_headers,
+            )),
+            ('pdf', lambda: self.client.get(f'/api/v1/quotes/{quote_id}/pdf', headers=self.other_headers)),
+        ]
+        for name, operation in operations:
+            with self.subTest(operation=name):
+                response = operation()
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()['error']['code'], 'QUOTE_NOT_FOUND')
+
+        owner_read = self.client.get(f'/api/v1/quotes/{quote_id}', headers=self.owner_headers)
+        self.assertEqual(owner_read.status_code, 200)
+        self.assertEqual(owner_read.json()['data']['status'], 'DRAFT')
+        self.assertEqual(owner_read.json()['data']['notes'], None)
