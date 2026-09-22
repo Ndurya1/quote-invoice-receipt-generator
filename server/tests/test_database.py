@@ -93,6 +93,33 @@ class PostgreSQLMigrationTests(unittest.TestCase):
             (self.schema,),
         ).fetchone(), (12, 3))
 
+    def test_document_query_indexes_are_present(self):
+        apply_migrations(self.connection)
+        expected = {
+            'clients_user_id_idx',
+            'clients_user_name_idx',
+            'quotes_user_id_idx',
+            'quotes_user_status_idx',
+            'quotes_client_id_idx',
+            'quotes_created_at_idx',
+            'invoices_user_id_idx',
+            'invoices_user_status_idx',
+            'invoices_client_id_idx',
+            'invoices_created_at_idx',
+            'invoices_source_quote_id_key',
+            'receipts_user_id_idx',
+            'receipts_client_id_idx',
+            'receipts_created_at_idx',
+            'receipts_source_invoice_id_idx',
+        }
+        actual = {
+            row[0]
+            for row in self.connection.execute(
+                "SELECT indexname FROM pg_indexes WHERE schemaname = current_schema()"
+            ).fetchall()
+        }
+        self.assertEqual(expected - actual, set())
+
     def test_uuid_defaults_and_utc_update_trigger(self):
         apply_migrations(self.connection)
         user_id, created, updated = self.connection.execute(
