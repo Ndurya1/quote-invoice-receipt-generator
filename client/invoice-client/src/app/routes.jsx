@@ -9,6 +9,9 @@ import LandingPage from '../pages/LandingPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import LoginPage from '../pages/auth/LoginPage.jsx';
 import RegisterPage from '../pages/auth/RegisterPage.jsx';
+import BusinessDetailsPage from '../pages/onboarding/BusinessDetailsPage.jsx';
+import DocumentDefaultsPage from '../pages/onboarding/DocumentDefaultsPage.jsx';
+import OnboardingCompletePage from '../pages/onboarding/OnboardingCompletePage.jsx';
 import RoutePlaceholderPage from '../pages/RoutePlaceholderPage';
 
 function Placeholder({ title, description }) {
@@ -31,9 +34,9 @@ export default function AppRoutes() {
 
       <Route element={<OnboardingRoute />}>
         <Route element={<OnboardingLayout />}>
-          <Route path={routePaths.onboardingBusiness} element={<Placeholder title="Business details" description="Business setup is ready for the onboarding slice." />} />
-          <Route path={routePaths.onboardingDefaults} element={<Placeholder title="Document defaults" description="Document defaults are ready for the onboarding slice." />} />
-          <Route path={routePaths.onboardingComplete} element={<Placeholder title="Your business details are ready" description="Setup completion is ready for the onboarding slice." />} />
+          <Route path={routePaths.onboardingBusiness} element={<BusinessDetailsPage />} />
+          <Route path={routePaths.onboardingDefaults} element={<DocumentDefaultsPage />} />
+          <Route path={routePaths.onboardingComplete} element={<OnboardingCompletePage />} />
         </Route>
       </Route>
 
