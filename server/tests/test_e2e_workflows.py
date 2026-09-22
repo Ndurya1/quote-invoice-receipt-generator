@@ -172,3 +172,36 @@ class EndToEndWorkflowTests(unittest.TestCase):
         for resource, document in (("quotes", saved_quote), ("invoices", saved_invoice), ("receipts", receipt)):
             with self.subTest(resource=resource):
                 self.assert_pdf(resource, document, token)
+
+    def test_direct_invoice_without_quote_converts_to_receipt(self):
+        token = self.owner_token()
+        client = self.create_client(token)
+        invoice_response = self.client.post(
+            "/api/v1/invoices",
+            json=self.invoice_payload(client["id"]), headers=self.headers(token),
+        )
+        self.assertEqual(invoice_response.status_code, 201, invoice_response.text)
+        invoice = invoice_response.json()["data"]
+        self.assertIsNone(invoice["source_quote_id"])
+        self.assertEqual(invoice["invoice_number"], "INV-0001")
+        self.assertEqual(invoice["total"], "106.00")
+
+        receipt_response = self.client.post(
+            f"/api/v1/invoices/{invoice['id']}/convert",
+            json={"issue_date": "2026-10-01"}, headers=self.headers(token),
+        )
+        self.assertEqual(receipt_response.status_code, 201, receipt_response.text)
+        receipt = receipt_response.json()["data"]
+        self.assertEqual(receipt["source_invoice_id"], invoice["id"])
+        self.assertEqual(receipt["client_id"], invoice["client_id"])
+        self.assertEqual(receipt["currency"], invoice["currency"])
+        self.assertEqual(receipt["total"], invoice["total"])
+        self.assertNotEqual(receipt["id"], invoice["id"])
+
+        retrieved = self.client.get(
+            f"/api/v1/receipts/{receipt['id']}", headers=self.headers(token),
+        )
+        self.assertEqual(retrieved.status_code, 200)
+        self.assertEqual(retrieved.json()["data"], receipt)
+        self.assert_pdf("invoices", invoice, token)
+        self.assert_pdf("receipts", receipt, token)
