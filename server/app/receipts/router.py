@@ -23,9 +23,13 @@ def list_receipts(
     connection: Annotated[Connection, Depends(get_database_connection)],
     page: Annotated[int, Query(ge=1, le=2147483647)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    client_id: UUID | None = None,
+    search: Annotated[str | None, Query(max_length=160)] = None,
+    sort: Annotated[str | None, Query(max_length=32)] = None,
 ) -> JSONResponse:
     receipts, total = paginate_receipts_for_user(
         connection, user_id=user.id, page=page, page_size=page_size,
+        client_id=client_id, search=search, sort=sort,
     )
     details = [ReceiptDetail(**row.receipt.model_dump(), items=row.items) for row in receipts]
     response = collection_response(details, page=page, page_size=page_size, total=total)
