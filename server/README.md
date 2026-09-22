@@ -20,6 +20,10 @@ server command, not by importing the application.
 | APP_NAME | quote-invoice-receipt generator API | Non-empty title |
 | APP_ENV | development | development, test, production |
 | APP_DEBUG | false | true, false; retained in settings, never enables HTTP tracebacks |
+| CORS_ALLOWED_ORIGINS | local Vite/React origins in development | comma-separated absolute frontend origins; no wildcard |
+| ALLOWED_HOSTS | unrestricted in development | comma-separated hostnames; required in production |
+| APP_FORCE_HTTPS | false | true in production; redirects plain HTTP requests |
+| LOG_LEVEL | INFO | DEBUG, INFO, WARNING, ERROR, or CRITICAL |
 
 `GET /health` reports application health. `GET /api/v1` resolves the API
 namespace. Neither endpoint checks database connectivity. Starting the API never
@@ -80,6 +84,40 @@ and removes its own randomly named schema within the separate test database.
 
 ```powershell
 python -m unittest discover -s tests -v
+```
+
+## Production deployment
+
+The included `Dockerfile` installs the locked dependencies, runs pending
+migrations, and starts Uvicorn on port `8000`. Set `PORT` when the platform
+provides a different listen port. Production deployments must inject
+`APP_ENV=production`, `APP_DEBUG=false`, `CORS_ALLOWED_ORIGINS`,
+`ALLOWED_HOSTS`, `JWT_SECRET_KEY`, and `DATABASE_URL`; do not copy `.env` into
+the image. `FORWARDED_ALLOW_IPS` must contain only the trusted reverse-proxy
+addresses or networks.
+
+Build and run locally with:
+
+```powershell
+docker build -t quote-invoice-receipt-api .
+docker run --rm -p 8000:8000 --env-file .env quote-invoice-receipt-api
+```
+
+## Production deployment
+
+The included `Dockerfile` installs the locked dependencies, runs pending
+migrations, and starts Uvicorn on port `8000`. Set `PORT` when the platform
+provides a different listen port. Production deployments must inject
+`APP_ENV=production`, `APP_DEBUG=false`, `CORS_ALLOWED_ORIGINS`,
+`ALLOWED_HOSTS`, `JWT_SECRET_KEY`, and `DATABASE_URL`; do not copy `.env` into
+the image. `FORWARDED_ALLOW_IPS` must contain only the trusted reverse-proxy
+addresses or networks.
+
+Build and run locally with:
+
+```powershell
+docker build -t quote-invoice-receipt-api .
+docker run --rm -p 8000:8000 --env-file .env quote-invoice-receipt-api
 ```
 
 ## Structure

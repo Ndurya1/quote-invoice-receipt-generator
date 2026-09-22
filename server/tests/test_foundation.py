@@ -39,3 +39,46 @@ class ApplicationTests(unittest.TestCase):
             with self.subTest(values=values), patch.dict("os.environ", values, clear=True):
                 with self.assertRaises(ValueError):
                     Settings.from_environment()
+
+    @patch.dict("os.environ", {"CORS_ALLOWED_ORIGINS": "https://app.example.com, https://admin.example.com/"}, clear=True)
+    def test_cors_origins_are_loaded_from_environment(self):
+        settings = Settings.from_environment()
+        self.assertEqual(settings.cors_origins, ("https://app.example.com", "https://admin.example.com"))
+
+    @patch.dict("os.environ", {"CORS_ALLOWED_ORIGINS": "*"}, clear=True)
+    def test_wildcard_cors_is_rejected(self):
+        with self.assertRaises(ValueError):
+            Settings.from_environment()
+
+    @patch.dict("os.environ", {"APP_ENV": "production", "APP_DEBUG": "true"}, clear=True)
+    def test_production_rejects_debug_mode(self):
+        with self.assertRaises(ValueError):
+            Settings.from_environment()
+
+    @patch.dict(
+        "os.environ",
+        {
+            "APP_ENV": "production",
+            "APP_DEBUG": "false",
+            "CORS_ALLOWED_ORIGINS": "https://app.example.com",
+            "ALLOWED_HOSTS": "api.example.com",
+            "JWT_SECRET_KEY": "production-test-secret-that-is-at-least-32-bytes-long",
+        },
+        clear=True,
+    )
+    def test_production_configuration_is_validated(self):
+        app = create_app()
+        self.assertEqual(app.state.settings.environment, "production")
+        self.assertTrue(app.state.settings.force_https)
+
+    @patch.dict("os.environ", {"APP_ENV": "production", "APP_DEBUG": "false"}, clear=True)
+    def test_production_requires_explicit_origins_and_hosts(self):
+        with self.assertRaises(ValueError):
+            create_app()
+
+    def test_cors_allows_configured_origin_only(self):
+        with TestClient(create_app(Settings(environment="test"))) as client:
+            allowed = client.get("/health", headers={"Origin": "http://localhost:5173"})
+            denied = client.get("/health", headers={"Origin": "https://untrusted.example"})
+        self.assertEqual(allowed.headers.get("access-control-allow-origin"), "http://localhost:5173")
+        self.assertNotIn("access-control-allow-origin", denied.headers)
