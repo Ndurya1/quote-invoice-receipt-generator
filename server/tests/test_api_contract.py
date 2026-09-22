@@ -114,3 +114,90 @@ class ServerManagedFieldTests(unittest.TestCase):
                 self.assertEqual(response.json()['error']['code'], 'VALIDATION_ERROR')
         for table in ('quotes', 'invoices', 'receipts'):
             self.assertEqual(self.connection.execute(f'SELECT count(*) FROM {table}').fetchone()[0], 0)
+
+
+class DomainErrorContractTests(unittest.TestCase):
+    setUpClass = classmethod(test_login.LoginTests.setUpClass.__func__)
+    setUp = test_login.LoginTests.setUp
+    drop_test_schema = test_login.LoginTests.drop_test_schema
+    login = test_login.LoginTests.login
+
+    def setUp(self):
+        test_login.LoginTests.setUp(self)
+        self.token = self.login().json()['data']['access_token']
+        self.headers = {'Authorization': 'Bearer ' + self.token}
+        response = self.client.post('/api/v1/clients', json={'name': 'Acme Ltd'}, headers=self.headers)
+        self.assertEqual(response.status_code, 201, response.text)
+        self.client_id = response.json()['data']['id']
+
+    def quote_payload(self):
+        return {
+            'client_id': self.client_id, 'issue_date': '2026-09-15', 'currency': 'KES',
+            'items': [{'description': 'Work', 'quantity': '1', 'unit_price': '100'}],
+        }
+
+    def invoice_payload(self):
+        return {
+            'client_id': self.client_id, 'issue_date': '2026-09-15', 'currency': 'KES',
+            'items': [{'description': 'Work', 'quantity': '1', 'unit_price': '100'}],
+        }
+
+    def test_authentication_and_credentials_error_codes(self):
+        response = self.client.get('/api/v1/clients')
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['error']['code'], 'AUTHENTICATION_REQUIRED')
+        response = self.client.post('/api/v1/auth/login', json={
+            'email': 'owner@example.com', 'password': 'wrong-password',
+        })
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['error']['code'], 'INVALID_CREDENTIALS')
+
+    def test_resource_and_state_error_codes(self):
+        missing = '00000000-0000-0000-0000-000000000001'
+        for path, code in (
+            (f'/api/v1/clients/{missing}', 'CLIENT_NOT_FOUND'),
+            (f'/api/v1/quotes/{missing}', 'QUOTE_NOT_FOUND'),
+            (f'/api/v1/invoices/{missing}', 'INVOICE_NOT_FOUND'),
+            (f'/api/v1/receipts/{missing}', 'RECEIPT_NOT_FOUND'),
+        ):
+            with self.subTest(path=path):
+                response = self.client.get(path, headers=self.headers)
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()['error']['code'], code)
+
+        quote = self.client.post('/api/v1/quotes', json=self.quote_payload(), headers=self.headers).json()['data']
+        send = self.client.post(f'/api/v1/quotes/{quote["id"]}/send', headers=self.headers)
+        self.assertEqual(send.status_code, 200)
+        repeated_send = self.client.post(f'/api/v1/quotes/{quote["id"]}/send', headers=self.headers)
+        self.assertEqual(repeated_send.status_code, 409)
+        self.assertEqual(repeated_send.json()['error']['code'], 'INVALID_QUOTE_STATUS')
+
+        invoice = self.client.post('/api/v1/invoices', json=self.invoice_payload(), headers=self.headers).json()['data']
+        send = self.client.post(f'/api/v1/invoices/{invoice["id"]}/send', headers=self.headers)
+        self.assertEqual(send.status_code, 200)
+        repeated_send = self.client.post(f'/api/v1/invoices/{invoice["id"]}/send', headers=self.headers)
+        self.assertEqual(repeated_send.status_code, 409)
+        self.assertEqual(repeated_send.json()['error']['code'], 'INVALID_INVOICE_STATUS')
+
+        client_in_use = self.client.delete(f'/api/v1/clients/{self.client_id}', headers=self.headers)
+        self.assertEqual(client_in_use.status_code, 409)
+        self.assertEqual(client_in_use.json()['error']['code'], 'CLIENT_IN_USE')
+
+    def test_quote_already_converted_and_validation_error_codes(self):
+        quote = self.client.post('/api/v1/quotes', json=self.quote_payload(), headers=self.headers).json()['data']
+        accepted = self.client.post(f'/api/v1/quotes/{quote["id"]}/accept', headers=self.headers)
+        self.assertEqual(accepted.status_code, 200)
+        converted = self.client.post(
+            f'/api/v1/quotes/{quote["id"]}/convert', json={'issue_date': '2026-09-15'}, headers=self.headers,
+        )
+        self.assertEqual(converted.status_code, 201)
+        repeated = self.client.post(
+            f'/api/v1/quotes/{quote["id"]}/convert', json={'issue_date': '2026-09-15'}, headers=self.headers,
+        )
+        self.assertEqual(repeated.status_code, 409)
+        self.assertEqual(repeated.json()['error']['code'], 'QUOTE_ALREADY_CONVERTED')
+
+        invalid = self.client.post('/api/v1/quotes', json={**self.quote_payload(), 'items': []}, headers=self.headers)
+        self.assertEqual(invalid.status_code, 422)
+        self.assertEqual(invalid.json()['error']['code'], 'VALIDATION_ERROR')
+        self.assertIn('errors', invalid.json()['error']['details'])
