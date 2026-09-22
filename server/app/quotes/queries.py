@@ -7,6 +7,8 @@ from psycopg import Connection
 from psycopg.rows import class_row
 
 from app.clients.models import Client
+from app.common.pagination import validate_pagination
+from app.common.errors import DomainError
 from app.quotes.models import Quote, QuoteItem
 
 
@@ -15,6 +17,28 @@ class LoadedQuote:
     quote: Quote
     items: tuple[QuoteItem, ...]
     client: Client
+
+
+QUOTE_SORTS = {
+    'created_at': 'q.created_at',
+    'issue_date': 'q.issue_date',
+    'expiry_date': 'q.expiry_date',
+    'quote_number': 'q.quote_number',
+    'total': 'q.total',
+    'status': 'q.status',
+    'id': 'q.id',
+}
+
+
+def _quote_order(sort: str | None) -> str:
+    requested = sort or '-created_at'
+    descending = requested.startswith('-')
+    field = requested[1:] if descending else requested
+    if field not in QUOTE_SORTS:
+        raise DomainError('VALIDATION_ERROR', 'Request validation failed.', status_code=422)
+    direction = 'DESC' if descending else 'ASC'
+    tie_direction = 'DESC' if descending else 'ASC'
+    return f'{QUOTE_SORTS[field]} {direction}, q.id {tie_direction}'
 
 
 def _load_related(
@@ -51,15 +75,36 @@ def get_quote_for_user(
 
 def paginate_quotes_for_user(
     connection: Connection, *, user_id: UUID, page: int, page_size: int,
+    status: str | None = None, client_id: UUID | None = None,
+    search: str | None = None, sort: str | None = None,
 ) -> tuple[list[LoadedQuote], int]:
-    if not 1 <= page <= 2147483647 or not 1 <= page_size <= 100:
-        raise ValueError('Invalid quote pagination bounds')
-    total = connection.execute('SELECT count(*) FROM quotes WHERE user_id = %s',
-                               (user_id,)).fetchone()[0]
+    pagination = validate_pagination(page, page_size)
+    order_by = _quote_order(sort)
+    conditions = ['q.user_id = %s']
+    parameters: list[object] = [user_id]
+    if status is not None:
+        conditions.append('q.status = %s')
+        parameters.append(status)
+    if client_id is not None:
+        conditions.append('q.client_id = %s')
+        parameters.append(client_id)
+    if search:
+        conditions.append(
+            '(q.quote_number ILIKE %s OR c.name ILIKE %s OR q.notes ILIKE %s OR q.terms ILIKE %s)'
+        )
+        pattern = f'%{search}%'
+        parameters.extend([pattern] * 4)
+    where = ' AND '.join(conditions)
+    total = connection.execute(
+        f'SELECT count(*) FROM quotes q JOIN clients c ON c.id = q.client_id '
+        f'WHERE {where}', tuple(parameters),
+    ).fetchone()[0]
     with connection.transaction():
         with connection.cursor(row_factory=class_row(Quote)) as cursor:
-            cursor.execute('SELECT * FROM quotes WHERE user_id = %s '
-                           'ORDER BY created_at DESC, id DESC LIMIT %s OFFSET %s FOR SHARE',
-                           (user_id, page_size, (page - 1) * page_size))
+            cursor.execute(
+                f'SELECT q.* FROM quotes q JOIN clients c ON c.id = q.client_id '
+                f'WHERE {where} ORDER BY {order_by} LIMIT %s OFFSET %s FOR SHARE',
+                (*parameters, pagination.page_size, pagination.offset),
+            )
             quotes = cursor.fetchall()
         return _load_related(connection, user_id=user_id, quotes=quotes), total

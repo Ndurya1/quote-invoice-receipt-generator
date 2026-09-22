@@ -711,7 +711,7 @@ Example response:
 
 ## 13. Filtering and Pagination
 
-Suggested collection query parameters:
+Collection endpoints accept the following common query parameters:
 
 ```text
 ?page=1
@@ -727,6 +727,32 @@ Applicable endpoints:
 - `/quotes`
 - `/invoices`
 - `/receipts`
+
+All filters are applied after authenticated-owner scoping and before counting
+and pagination. `sort` accepts a whitelisted field name; prefixing the field
+with `-` requests descending order. Every result has a deterministic UUID
+tie-breaker. Unsupported sort fields and malformed filter values return 422.
+
+Client-specific parameters:
+- `search`: case-insensitive match against `name`, `email`, or `phone`.
+- `sort`: `name`, `created_at`, or `id`.
+
+Quote-specific parameters:
+- `status`: a Quote status value.
+- `client_id`: an owned client UUID.
+- `search`: case-insensitive match against quote number, client name, notes, or terms.
+- `sort`: `created_at`, `issue_date`, `expiry_date`, `quote_number`, `total`, `status`, or `id`.
+
+Invoice-specific parameters:
+- `status`: an Invoice status value.
+- `client_id`: an owned client UUID.
+- `search`: case-insensitive match against invoice number, client name, notes, or terms.
+- `sort`: `created_at`, `issue_date`, `due_date`, `invoice_number`, `total`, `status`, or `id`.
+
+Receipt-specific parameters:
+- `client_id`: an owned client UUID.
+- `search`: case-insensitive match against receipt number, client name, or notes.
+- `sort`: `created_at`, `issue_date`, `receipt_number`, `total`, or `id`.
 
 ---
 

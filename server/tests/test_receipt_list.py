@@ -41,3 +41,13 @@ class ReceiptListTests(unittest.TestCase):
                        {'page_size': 0}, {'page': 'bad'}):
             with self.subTest(params=params):
                 self.assertEqual(self.get(**params).status_code, 422)
+
+    def test_filters_search_and_sort_apply_before_pagination(self):
+        first = self.post(self.payload(notes='alpha receipt')).json()['data']
+        self.post(self.payload(notes='beta receipt'))
+        response = self.get(search='ALPHA', sort='receipt_number', page_size=1)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['meta']['total'], 1)
+        self.assertEqual(response.json()['data'][0]['id'], first['id'])
+        self.assertEqual(self.get(client_id=self.client_id, sort='-total').status_code, 200)
+        self.assertEqual(self.get(sort='unknown').status_code, 422)

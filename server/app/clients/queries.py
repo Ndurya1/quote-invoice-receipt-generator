@@ -6,6 +6,25 @@ from psycopg import Connection
 from psycopg.rows import class_row
 
 from app.clients.models import Client
+from app.common.pagination import validate_pagination
+from app.common.errors import DomainError
+
+
+CLIENT_SORTS = {
+    'name': 'name',
+    'created_at': 'created_at',
+    'id': 'id',
+}
+
+
+def _client_order(sort: str | None) -> str:
+    requested = sort or 'created_at'
+    descending = requested.startswith('-')
+    field = requested[1:] if descending else requested
+    if field not in CLIENT_SORTS:
+        raise DomainError('VALIDATION_ERROR', 'Request validation failed.', status_code=422)
+    direction = 'DESC' if descending else 'ASC'
+    return f'{CLIENT_SORTS[field]} {direction}, id ASC'
 
 
 def get_client_for_user(
@@ -34,17 +53,25 @@ def list_clients_for_user(connection: Connection, *, user_id: UUID) -> list[Clie
 
 def paginate_clients_for_user(
     connection: Connection, *, user_id: UUID, page: int, page_size: int,
+    search: str | None = None, sort: str | None = None,
 ) -> tuple[list[Client], int]:
     """Count and fetch only the authenticated owner's requested page."""
-    if not 1 <= page <= 2147483647 or not 1 <= page_size <= 100:
-        raise ValueError('Invalid client pagination bounds')
+    pagination = validate_pagination(page, page_size)
+    order_by = _client_order(sort)
+    conditions = ['user_id = %s']
+    parameters: list[object] = [user_id]
+    if search:
+        conditions.append('(name ILIKE %s OR email ILIKE %s OR phone ILIKE %s)')
+        pattern = f'%{search}%'
+        parameters.extend([pattern, pattern, pattern])
+    where = ' AND '.join(conditions)
     total = connection.execute(
-        'SELECT count(*) FROM clients WHERE user_id = %s', (user_id,),
+        f'SELECT count(*) FROM clients WHERE {where}', tuple(parameters),
     ).fetchone()[0]
     with connection.cursor(row_factory=class_row(Client)) as cursor:
         cursor.execute(
             'SELECT id, user_id, name, email, phone, address, created_at, updated_at '
-            'FROM clients WHERE user_id = %s ORDER BY created_at, id LIMIT %s OFFSET %s',
-            (user_id, page_size, (page - 1) * page_size),
+            f'FROM clients WHERE {where} ORDER BY {order_by} LIMIT %s OFFSET %s',
+            (*parameters, pagination.page_size, pagination.offset),
         )
         return cursor.fetchall(), total
