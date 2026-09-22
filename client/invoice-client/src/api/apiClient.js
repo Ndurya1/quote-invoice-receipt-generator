@@ -2,6 +2,7 @@ import { SessionExpiredError } from './apiErrors.js';
 import { getApiBaseUrl } from './apiConfig.js';
 import { parseApiResponse } from './apiResponse.js';
 import { sessionStore as defaultSessionStore } from './sessionStore.js';
+import { emitSessionExpired } from '../auth/sessionEvents.js';
 
 const authPaths = new Set(['/auth/register', '/auth/login', '/auth/refresh']);
 
@@ -103,4 +104,4 @@ export function createApiClient({
   return { request, requestBlob, refreshAccessToken, sessionStore: session };
 }
 
-export const apiClient = createApiClient();
+export const apiClient = createApiClient({ onSessionExpired: emitSessionExpired });
