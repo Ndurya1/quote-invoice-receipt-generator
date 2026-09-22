@@ -1,5 +1,6 @@
 import unittest
 from uuid import UUID, uuid4
+from unittest.mock import Mock
 
 from app.invoices.queries import get_invoice_for_user, paginate_invoices_for_user
 from tests import test_invoice_endpoint
@@ -35,3 +36,18 @@ class InvoiceQueryTests(unittest.TestCase):
         for page, size in [(0, 20), (1, 101), (1, 0)]:
             with self.assertRaises(ValueError):
                 paginate_invoices_for_user(self.connection, user_id=UUID(self.user_id), page=page, page_size=size)
+
+    def test_related_loading_has_constant_query_count(self):
+        for _ in range(3):
+            self.post(self.payload())
+
+        connection = Mock(wraps=self.connection)
+        rows, total = paginate_invoices_for_user(
+            connection, user_id=UUID(self.user_id), page=1, page_size=3,
+        )
+
+        self.assertEqual(total, 3)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(connection.execute.call_count, 1)
+        self.assertEqual(connection.cursor.call_count, 2)
+        self.assertTrue(all(row.items for row in rows))
