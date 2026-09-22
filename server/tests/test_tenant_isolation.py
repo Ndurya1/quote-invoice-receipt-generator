@@ -173,3 +173,32 @@ class TenantIsolationTests(unittest.TestCase):
         owner_read = self.client.get(f'/api/v1/receipts/{receipt_id}', headers=self.owner_headers)
         self.assertEqual(owner_read.status_code, 200)
         self.assertIsNone(owner_read.json()['data']['notes'])
+
+    def test_documents_cannot_reference_a_foreign_client(self):
+        before = {
+            'quotes': self.connection.execute('SELECT count(*) FROM quotes WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+            'invoices': self.connection.execute('SELECT count(*) FROM invoices WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+            'receipts': self.connection.execute('SELECT count(*) FROM receipts WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+        }
+        attempts = [
+            ('quotes', self.quote_payload(self.other_client_id)),
+            ('invoices', self.invoice_payload(self.other_client_id)),
+            ('receipts', self.receipt_payload(self.other_client_id)),
+        ]
+        for resource, payload in attempts:
+            with self.subTest(resource=resource):
+                response = self.client.post(
+                    f'/api/v1/{resource}', json=payload, headers=self.owner_headers,
+                )
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()['error']['code'], 'CLIENT_NOT_FOUND')
+
+        after = {
+            'quotes': self.connection.execute('SELECT count(*) FROM quotes WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+            'invoices': self.connection.execute('SELECT count(*) FROM invoices WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+            'receipts': self.connection.execute('SELECT count(*) FROM receipts WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+        }
+        self.assertEqual(after, before)
+        other_read = self.client.get(f'/api/v1/clients/{self.other_client_id}', headers=self.other_headers)
+        self.assertEqual(other_read.status_code, 200)
+        self.assertEqual(other_read.json()['data']['name'], 'Other Client')
