@@ -152,3 +152,24 @@ class TenantIsolationTests(unittest.TestCase):
         self.assertEqual(owner_read.status_code, 200)
         self.assertEqual(owner_read.json()['data']['status'], 'DRAFT')
         self.assertIsNone(owner_read.json()['data']['notes'])
+
+    def test_foreign_receipt_read_update_delete_and_pdf_are_not_visible(self):
+        receipt = self.create_receipt()
+        receipt_id = receipt['id']
+        operations = [
+            ('read', lambda: self.client.get(f'/api/v1/receipts/{receipt_id}', headers=self.other_headers)),
+            ('patch', lambda: self.client.patch(
+                f'/api/v1/receipts/{receipt_id}', json={'notes': 'Hijacked'}, headers=self.other_headers,
+            )),
+            ('delete', lambda: self.client.delete(f'/api/v1/receipts/{receipt_id}', headers=self.other_headers)),
+            ('pdf', lambda: self.client.get(f'/api/v1/receipts/{receipt_id}/pdf', headers=self.other_headers)),
+        ]
+        for name, operation in operations:
+            with self.subTest(operation=name):
+                response = operation()
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()['error']['code'], 'RECEIPT_NOT_FOUND')
+
+        owner_read = self.client.get(f'/api/v1/receipts/{receipt_id}', headers=self.owner_headers)
+        self.assertEqual(owner_read.status_code, 200)
+        self.assertIsNone(owner_read.json()['data']['notes'])
