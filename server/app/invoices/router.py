@@ -12,6 +12,8 @@ from app.accounts.models import User
 from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
+from app.pdf.context import build_invoice_context
+from app.pdf.invoice import render_invoice_pdf
 from app.invoices.models import InvoiceStatus
 from app.invoices.queries import get_invoice_for_user, paginate_invoices_for_user
 from app.invoices.schemas import InvoiceCreate, InvoiceDetail, InvoiceListResponse, InvoicePatch, InvoiceResponse
@@ -20,6 +22,22 @@ from app.conversions.invoice_receipt import convert_invoice_to_receipt
 from app.receipts.schemas import ReceiptConvert, ReceiptDetail, ReceiptResponse
 
 router = APIRouter(prefix='/invoices', tags=['invoices'])
+
+
+@router.get('/{invoice_id}/pdf', response_class=Response, responses={200: {'content': {'application/pdf': {}}}})
+def invoice_pdf(
+    invoice_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> Response:
+    context = build_invoice_context(connection, user_id=user.id, invoice_id=invoice_id)
+    return Response(
+        content=render_invoice_pdf(context), media_type='application/pdf',
+        headers={
+            'Cache-Control': 'no-store',
+            'Content-Disposition': f'attachment; filename="{context.document_number}.pdf"',
+        },
+    )
 
 
 @router.get('', response_model=InvoiceListResponse)

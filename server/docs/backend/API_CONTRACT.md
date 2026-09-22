@@ -674,6 +674,9 @@ Rules:
 - Data comes from persisted backend state.
 - Computed totals must not come from arbitrary query/body input.
 - Response content type: `application/pdf`.
+- Responses include `Cache-Control: no-store` and a download filename based on
+  the persisted document number.
+- Missing or foreign documents use the resource-specific not-found error.
 
 ---
 

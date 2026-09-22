@@ -10,11 +10,29 @@ from app.accounts.models import User
 from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
+from app.pdf.context import build_receipt_context
+from app.pdf.receipt import render_receipt_pdf
 from app.receipts.queries import get_receipt_for_user, paginate_receipts_for_user
 from app.receipts.schemas import ReceiptCreate, ReceiptDetail, ReceiptListResponse, ReceiptPatch, ReceiptResponse
 from app.receipts.service import create_receipt, delete_receipt, update_receipt
 
 router = APIRouter(prefix='/receipts', tags=['receipts'])
+
+
+@router.get('/{receipt_id}/pdf', response_class=Response, responses={200: {'content': {'application/pdf': {}}}})
+def receipt_pdf(
+    receipt_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    connection: Annotated[Connection, Depends(get_database_connection)],
+) -> Response:
+    context = build_receipt_context(connection, user_id=user.id, receipt_id=receipt_id)
+    return Response(
+        content=render_receipt_pdf(context), media_type='application/pdf',
+        headers={
+            'Cache-Control': 'no-store',
+            'Content-Disposition': f'attachment; filename="{context.document_number}.pdf"',
+        },
+    )
 
 
 @router.get('', response_model=ReceiptListResponse)
