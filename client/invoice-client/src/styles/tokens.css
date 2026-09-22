@@ -1,0 +1,28 @@
+:root {
+  --app-color-bg: #F6F7F4;
+  --app-color-surface: #FFFFFF;
+  --app-color-surface-soft: #EEF1EC;
+  --app-color-text: #182019;
+  --app-color-text-secondary: #536057;
+  --app-color-text-muted: #768078;
+  --app-color-border: #DDE2DC;
+  --app-color-border-strong: #BBC4BC;
+  --app-color-accent: #245C3A;
+  --app-color-accent-hover: #19472C;
+  --app-color-accent-soft: #E1EFE5;
+  --app-color-success: #217A45;
+  --app-color-warning: #9A6412;
+  --app-color-danger: #B13A32;
+  --app-color-focus: #4B8B62;
+  --app-radius-control: 8px;
+  --app-radius-surface: 12px;
+  --app-shadow-overlay: 0 12px 32px rgb(20 30 23 / 12%);
+  --app-space-1: 4px;
+  --app-space-2: 8px;
+  --app-space-3: 12px;
+  --app-space-4: 16px;
+  --app-space-5: 24px;
+  --app-space-6: 32px;
+  --app-space-7: 48px;
+  --app-space-8: 64px;
+}
