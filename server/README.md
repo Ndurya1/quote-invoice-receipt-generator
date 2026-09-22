@@ -86,6 +86,40 @@ and removes its own randomly named schema within the separate test database.
 python -m unittest discover -s tests -v
 ```
 
+## Production deployment
+
+The included `Dockerfile` installs the locked dependencies, runs pending
+migrations, and starts Uvicorn on port `8000`. Set `PORT` when the platform
+provides a different listen port. Production deployments must inject
+`APP_ENV=production`, `APP_DEBUG=false`, `CORS_ALLOWED_ORIGINS`,
+`ALLOWED_HOSTS`, `JWT_SECRET_KEY`, and `DATABASE_URL`; do not copy `.env` into
+the image. `FORWARDED_ALLOW_IPS` must contain only the trusted reverse-proxy
+addresses or networks.
+
+Build and run locally with:
+
+```powershell
+docker build -t quote-invoice-receipt-api .
+docker run --rm -p 8000:8000 --env-file .env quote-invoice-receipt-api
+```
+
+## Production deployment
+
+The included `Dockerfile` installs the locked dependencies, runs pending
+migrations, and starts Uvicorn on port `8000`. Set `PORT` when the platform
+provides a different listen port. Production deployments must inject
+`APP_ENV=production`, `APP_DEBUG=false`, `CORS_ALLOWED_ORIGINS`,
+`ALLOWED_HOSTS`, `JWT_SECRET_KEY`, and `DATABASE_URL`; do not copy `.env` into
+the image. `FORWARDED_ALLOW_IPS` must contain only the trusted reverse-proxy
+addresses or networks.
+
+Build and run locally with:
+
+```powershell
+docker build -t quote-invoice-receipt-api .
+docker run --rm -p 8000:8000 --env-file .env quote-invoice-receipt-api
+```
+
 ## Structure
 
 - `app/main.py`: application factory and ASGI entry point
