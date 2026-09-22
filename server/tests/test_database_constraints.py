@@ -122,3 +122,47 @@ class DatabaseConstraintTests(unittest.TestCase):
                                         %(unit_price)s, %(line_total)s)''',
                             values,
                         )
+
+    def test_one_invoice_per_quote_is_enforced(self):
+        quote_id = self.connection.execute(
+            '''INSERT INTO quotes
+               (user_id, client_id, quote_number, issue_date, currency, subtotal, total)
+               VALUES (%s, %s, 'QT-SOURCE', DATE '2026-09-15', 'KES', 0, 0) RETURNING id''',
+            (self.owner.id, self.owner_client),
+        ).fetchone()[0]
+        self.connection.execute(
+            '''INSERT INTO invoices
+               (user_id, client_id, source_quote_id, invoice_number, issue_date, currency, subtotal, total)
+               VALUES (%s, %s, %s, 'INV-SOURCE-1', DATE '2026-09-15', 'KES', 0, 0)''',
+            (self.owner.id, self.owner_client, quote_id),
+        )
+        with self.assertRaises(errors.UniqueViolation):
+            self.connection.execute(
+                '''INSERT INTO invoices
+                   (user_id, client_id, source_quote_id, invoice_number, issue_date, currency, subtotal, total)
+                   VALUES (%s, %s, %s, 'INV-SOURCE-2', DATE '2026-09-15', 'KES', 0, 0)''',
+                (self.owner.id, self.owner_client, quote_id),
+            )
+        self.assertEqual(
+            self.connection.execute('SELECT count(*) FROM invoices WHERE source_quote_id = %s', (quote_id,)).fetchone()[0],
+            1,
+        )
+
+    def test_multiple_receipts_per_invoice_are_allowed(self):
+        invoice_id = self.connection.execute(
+            '''INSERT INTO invoices
+               (user_id, client_id, invoice_number, issue_date, currency, subtotal, total)
+               VALUES (%s, %s, 'INV-RECEIPT-SOURCE', DATE '2026-09-15', 'KES', 0, 0) RETURNING id''',
+            (self.owner.id, self.owner_client),
+        ).fetchone()[0]
+        for number in ('RCT-SOURCE-1', 'RCT-SOURCE-2'):
+            self.connection.execute(
+                '''INSERT INTO receipts
+                   (user_id, client_id, source_invoice_id, receipt_number, issue_date, currency, subtotal, total)
+                   VALUES (%s, %s, %s, %s, DATE '2026-09-15', 'KES', 0, 0)''',
+                (self.owner.id, self.owner_client, invoice_id, number),
+            )
+        self.assertEqual(
+            self.connection.execute('SELECT count(*) FROM receipts WHERE source_invoice_id = %s', (invoice_id,)).fetchone()[0],
+            2,
+        )
