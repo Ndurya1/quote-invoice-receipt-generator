@@ -10,9 +10,14 @@ export default function DataCacheProvider({ children }) {
     return value;
   }, []);
   const remove = useCallback((key) => cacheRef.current.delete(key), []);
+  const removeByPrefix = useCallback((prefix) => {
+    for (const key of cacheRef.current.keys()) {
+      if (String(key).startsWith(prefix)) cacheRef.current.delete(key);
+    }
+  }, []);
   const clear = useCallback(() => cacheRef.current.clear(), []);
 
-  const value = useMemo(() => ({ get, set, remove, clear }), [clear, get, remove, set]);
+  const value = useMemo(() => ({ get, set, remove, removeByPrefix, clear }), [clear, get, remove, removeByPrefix, set]);
 
   return <cacheContext.Provider value={value}>{children}</cacheContext.Provider>;
 }
