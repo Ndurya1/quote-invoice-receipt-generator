@@ -1,0 +1,204 @@
+import unittest
+from uuid import UUID
+
+from tests import test_login
+
+
+class TenantIsolationTests(unittest.TestCase):
+    setUpClass = classmethod(test_login.LoginTests.setUpClass.__func__)
+    setUp = test_login.LoginTests.setUp
+    drop_test_schema = test_login.LoginTests.drop_test_schema
+    login = test_login.LoginTests.login
+
+    def setUp(self):
+        test_login.LoginTests.setUp(self)
+        self.owner_token = self.login().json()['data']['access_token']
+        self.owner_headers = {'Authorization': 'Bearer ' + self.owner_token}
+        other = self.client.post('/api/v1/auth/register', json={
+            'name': 'Other User', 'email': 'other@example.com', 'password': 'ExactPassword123',
+        }).json()['data']
+        self.other_token = self.client.post('/api/v1/auth/login', json={
+            'email': other['email'], 'password': 'ExactPassword123',
+        }).json()['data']['access_token']
+        self.other_headers = {'Authorization': 'Bearer ' + self.other_token}
+        self.owner_client_id = self.create_client(self.owner_headers, 'Owner Client')
+        self.other_client_id = self.create_client(self.other_headers, 'Other Client')
+
+    def create_client(self, headers, name):
+        response = self.client.post('/api/v1/clients', json={'name': name}, headers=headers)
+        self.assertEqual(response.status_code, 201, response.text)
+        return response.json()['data']['id']
+
+    def quote_payload(self, client_id):
+        return {
+            'client_id': client_id, 'issue_date': '2026-09-15', 'currency': 'KES',
+            'items': [{'description': 'Work', 'quantity': '1', 'unit_price': '100'}],
+        }
+
+    def invoice_payload(self, client_id):
+        return {
+            'client_id': client_id, 'issue_date': '2026-09-15', 'currency': 'KES',
+            'items': [{'description': 'Work', 'quantity': '1', 'unit_price': '100'}],
+        }
+
+    def receipt_payload(self, client_id):
+        return {
+            'client_id': client_id, 'issue_date': '2026-09-15', 'currency': 'KES',
+            'items': [{'description': 'Work', 'quantity': '1', 'unit_price': '100'}],
+        }
+
+    def create_quote(self, headers=None, client_id=None):
+        response = self.client.post(
+            '/api/v1/quotes', json=self.quote_payload(client_id or self.owner_client_id),
+            headers=headers or self.owner_headers,
+        )
+        self.assertEqual(response.status_code, 201, response.text)
+        return response.json()['data']
+
+    def create_invoice(self, headers=None, client_id=None):
+        response = self.client.post(
+            '/api/v1/invoices', json=self.invoice_payload(client_id or self.owner_client_id),
+            headers=headers or self.owner_headers,
+        )
+        self.assertEqual(response.status_code, 201, response.text)
+        return response.json()['data']
+
+    def create_receipt(self, headers=None, client_id=None):
+        response = self.client.post(
+            '/api/v1/receipts', json=self.receipt_payload(client_id or self.owner_client_id),
+            headers=headers or self.owner_headers,
+        )
+        self.assertEqual(response.status_code, 201, response.text)
+        return response.json()['data']
+
+    def test_foreign_client_read_patch_delete_are_not_visible(self):
+        client_id = self.owner_client_id
+        read = self.client.get(f'/api/v1/clients/{client_id}', headers=self.other_headers)
+        self.assertEqual(read.status_code, 404)
+        self.assertEqual(read.json()['error']['code'], 'CLIENT_NOT_FOUND')
+
+        patch = self.client.patch(
+            f'/api/v1/clients/{client_id}', json={'name': 'Hijacked'}, headers=self.other_headers,
+        )
+        self.assertEqual(patch.status_code, 404)
+        self.assertEqual(patch.json()['error']['code'], 'CLIENT_NOT_FOUND')
+
+        delete = self.client.delete(f'/api/v1/clients/{client_id}', headers=self.other_headers)
+        self.assertEqual(delete.status_code, 404)
+        self.assertEqual(delete.json()['error']['code'], 'CLIENT_NOT_FOUND')
+
+        owner_read = self.client.get(f'/api/v1/clients/{client_id}', headers=self.owner_headers)
+        self.assertEqual(owner_read.status_code, 200)
+        self.assertEqual(owner_read.json()['data']['name'], 'Owner Client')
+
+    def test_foreign_quote_read_update_delete_actions_convert_and_pdf_are_not_visible(self):
+        quote = self.create_quote()
+        quote_id = quote['id']
+        operations = [
+            ('read', lambda: self.client.get(f'/api/v1/quotes/{quote_id}', headers=self.other_headers)),
+            ('patch', lambda: self.client.patch(
+                f'/api/v1/quotes/{quote_id}', json={'notes': 'Hijacked'}, headers=self.other_headers,
+            )),
+            ('delete', lambda: self.client.delete(f'/api/v1/quotes/{quote_id}', headers=self.other_headers)),
+            ('send', lambda: self.client.post(f'/api/v1/quotes/{quote_id}/send', headers=self.other_headers)),
+            ('accept', lambda: self.client.post(f'/api/v1/quotes/{quote_id}/accept', headers=self.other_headers)),
+            ('reject', lambda: self.client.post(f'/api/v1/quotes/{quote_id}/reject', headers=self.other_headers)),
+            ('convert', lambda: self.client.post(
+                f'/api/v1/quotes/{quote_id}/convert', json={'issue_date': '2026-09-15'},
+                headers=self.other_headers,
+            )),
+            ('pdf', lambda: self.client.get(f'/api/v1/quotes/{quote_id}/pdf', headers=self.other_headers)),
+        ]
+        for name, operation in operations:
+            with self.subTest(operation=name):
+                response = operation()
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()['error']['code'], 'QUOTE_NOT_FOUND')
+
+        owner_read = self.client.get(f'/api/v1/quotes/{quote_id}', headers=self.owner_headers)
+        self.assertEqual(owner_read.status_code, 200)
+        self.assertEqual(owner_read.json()['data']['status'], 'DRAFT')
+        self.assertEqual(owner_read.json()['data']['notes'], None)
+
+    def test_foreign_invoice_read_update_delete_actions_convert_and_pdf_are_not_visible(self):
+        invoice = self.create_invoice()
+        invoice_id = invoice['id']
+        operations = [
+            ('read', lambda: self.client.get(f'/api/v1/invoices/{invoice_id}', headers=self.other_headers)),
+            ('patch', lambda: self.client.patch(
+                f'/api/v1/invoices/{invoice_id}', json={'notes': 'Hijacked'}, headers=self.other_headers,
+            )),
+            ('delete', lambda: self.client.delete(f'/api/v1/invoices/{invoice_id}', headers=self.other_headers)),
+            ('send', lambda: self.client.post(f'/api/v1/invoices/{invoice_id}/send', headers=self.other_headers)),
+            ('mark-paid', lambda: self.client.post(
+                f'/api/v1/invoices/{invoice_id}/mark-paid', headers=self.other_headers,
+            )),
+            ('cancel', lambda: self.client.post(
+                f'/api/v1/invoices/{invoice_id}/cancel', headers=self.other_headers,
+            )),
+            ('convert', lambda: self.client.post(
+                f'/api/v1/invoices/{invoice_id}/convert', json={'issue_date': '2026-09-15'},
+                headers=self.other_headers,
+            )),
+            ('pdf', lambda: self.client.get(f'/api/v1/invoices/{invoice_id}/pdf', headers=self.other_headers)),
+        ]
+        for name, operation in operations:
+            with self.subTest(operation=name):
+                response = operation()
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()['error']['code'], 'INVOICE_NOT_FOUND')
+
+        owner_read = self.client.get(f'/api/v1/invoices/{invoice_id}', headers=self.owner_headers)
+        self.assertEqual(owner_read.status_code, 200)
+        self.assertEqual(owner_read.json()['data']['status'], 'DRAFT')
+        self.assertIsNone(owner_read.json()['data']['notes'])
+
+    def test_foreign_receipt_read_update_delete_and_pdf_are_not_visible(self):
+        receipt = self.create_receipt()
+        receipt_id = receipt['id']
+        operations = [
+            ('read', lambda: self.client.get(f'/api/v1/receipts/{receipt_id}', headers=self.other_headers)),
+            ('patch', lambda: self.client.patch(
+                f'/api/v1/receipts/{receipt_id}', json={'notes': 'Hijacked'}, headers=self.other_headers,
+            )),
+            ('delete', lambda: self.client.delete(f'/api/v1/receipts/{receipt_id}', headers=self.other_headers)),
+            ('pdf', lambda: self.client.get(f'/api/v1/receipts/{receipt_id}/pdf', headers=self.other_headers)),
+        ]
+        for name, operation in operations:
+            with self.subTest(operation=name):
+                response = operation()
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()['error']['code'], 'RECEIPT_NOT_FOUND')
+
+        owner_read = self.client.get(f'/api/v1/receipts/{receipt_id}', headers=self.owner_headers)
+        self.assertEqual(owner_read.status_code, 200)
+        self.assertIsNone(owner_read.json()['data']['notes'])
+
+    def test_documents_cannot_reference_a_foreign_client(self):
+        before = {
+            'quotes': self.connection.execute('SELECT count(*) FROM quotes WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+            'invoices': self.connection.execute('SELECT count(*) FROM invoices WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+            'receipts': self.connection.execute('SELECT count(*) FROM receipts WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+        }
+        attempts = [
+            ('quotes', self.quote_payload(self.other_client_id)),
+            ('invoices', self.invoice_payload(self.other_client_id)),
+            ('receipts', self.receipt_payload(self.other_client_id)),
+        ]
+        for resource, payload in attempts:
+            with self.subTest(resource=resource):
+                response = self.client.post(
+                    f'/api/v1/{resource}', json=payload, headers=self.owner_headers,
+                )
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()['error']['code'], 'CLIENT_NOT_FOUND')
+
+        after = {
+            'quotes': self.connection.execute('SELECT count(*) FROM quotes WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+            'invoices': self.connection.execute('SELECT count(*) FROM invoices WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+            'receipts': self.connection.execute('SELECT count(*) FROM receipts WHERE user_id = %s', (UUID(self.user_id),)).fetchone()[0],
+        }
+        self.assertEqual(after, before)
+        other_read = self.client.get(f'/api/v1/clients/{self.other_client_id}', headers=self.other_headers)
+        self.assertEqual(other_read.status_code, 200)
+        self.assertEqual(other_read.json()['data']['name'], 'Other Client')
