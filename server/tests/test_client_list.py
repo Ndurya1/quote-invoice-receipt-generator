@@ -65,6 +65,44 @@ class ClientListTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 422)
                 self.assertEqual(response.json()['error']['code'], 'VALIDATION_ERROR')
 
+    def test_search_is_owner_scoped_and_total_matches_filtered_rows(self):
+        with self.connection.transaction():
+            self.connection.execute(
+                'INSERT INTO clients (user_id, name, email, phone) VALUES (%s, %s, %s, %s)',
+                (UUID(self.user_id), 'Acme Supplies', 'sales@acme.test', '0700000001'),
+            )
+            self.connection.execute(
+                'INSERT INTO clients (user_id, name) VALUES (%s, %s)',
+                (UUID(self.user_id), 'Beta Services'),
+            )
+        other = self.client.post('/api/v1/auth/register', json={
+            'name': 'Other', 'email': 'other@example.com', 'password': 'OtherPassword123',
+        }).json()['data']
+        with self.connection.transaction():
+            self.connection.execute(
+                'INSERT INTO clients (user_id, name) VALUES (%s, %s)',
+                (UUID(other['id']), 'Acme Foreign'),
+            )
+        token = self.login().json()['data']['access_token']
+        response = self.get(token, search='ACME')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['meta']['total'], 1)
+        self.assertEqual(response.json()['data'][0]['name'], 'Acme Supplies')
+
+    def test_sort_is_whitelisted_and_supports_descending(self):
+        with self.connection.transaction():
+            for name in ('Charlie', 'Alpha', 'Bravo'):
+                self.connection.execute(
+                    'INSERT INTO clients (user_id, name) VALUES (%s, %s)',
+                    (UUID(self.user_id), name),
+                )
+        token = self.login().json()['data']['access_token']
+        response = self.get(token, sort='-name')
+        self.assertEqual([row['name'] for row in response.json()['data']], ['Charlie', 'Bravo', 'Alpha'])
+        invalid = self.get(token, sort='email')
+        self.assertEqual(invalid.status_code, 422)
+        self.assertEqual(invalid.json()['error']['code'], 'VALIDATION_ERROR')
+
     def test_authentication_required(self):
         pair = self.login().json()['data']
         for headers in ({}, {'Authorization': 'Bearer invalid'},

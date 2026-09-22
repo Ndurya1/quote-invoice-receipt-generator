@@ -62,9 +62,12 @@ def list_clients(
     connection: Annotated[Connection, Depends(get_database_connection)],
     page: Annotated[int, Query(ge=1, le=2147483647)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    search: Annotated[str | None, Query(max_length=160)] = None,
+    sort: Annotated[str | None, Query(max_length=32)] = None,
 ) -> JSONResponse:
     clients, total = paginate_clients_for_user(
         connection, user_id=user.id, page=page, page_size=page_size,
+        search=search, sort=sort,
     )
     response = collection_response(clients, page=page, page_size=page_size, total=total)
     response.headers['Cache-Control'] = 'no-store'
