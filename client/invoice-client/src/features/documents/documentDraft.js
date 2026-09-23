@@ -6,6 +6,13 @@ const configs = {
 
 let draftCounter = 0;
 
+function localDateValue(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function documentConfig(type) {
   return configs[type] || configs.quotation;
 }
@@ -19,7 +26,7 @@ export function createLineItem() {
   return { id: draftId(), description: '', quantity: '1', unit_price: '0.00', position: 0 };
 }
 
-export function createDocumentDraft({ type = 'quotation', businessProfile = {}, today = new Date().toISOString().slice(0, 10) } = {}) {
+export function createDocumentDraft({ type = 'quotation', businessProfile = {}, today = localDateValue() } = {}) {
   const config = documentConfig(type);
   const profile = businessProfile || {};
   return {

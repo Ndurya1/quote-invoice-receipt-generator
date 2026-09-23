@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import CreateDocumentMenu from '../features/dashboard/components/CreateDocumentMenu.jsx';
 import { useClientsList } from '../features/clients/useClients.js';
@@ -16,6 +16,7 @@ export default function DocumentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchKey = searchParams.toString();
   const filters = useMemo(() => readDocumentFilters(new URLSearchParams(searchKey)), [searchKey]);
+  const [searchDraft, setSearchDraft] = useState(filters.search);
   const config = documentListConfig(filters.type);
   const documentState = useDocuments(filters);
   const clientsState = useClientsList({ page: 1, page_size: 100, search: '', sort: 'name' });
@@ -23,6 +24,13 @@ export default function DocumentsPage() {
   const documents = documentState.data?.data || [];
   const meta = documentState.data?.meta || { page: filters.page, page_size: filters.page_size, total: 0 };
   const totalPages = Math.max(1, Math.ceil(meta.total / meta.page_size));
+
+  useEffect(() => setSearchDraft(filters.search), [filters.search]);
+  useEffect(() => {
+    if (searchDraft === filters.search) return undefined;
+    const timer = window.setTimeout(() => updateUrl({ search: searchDraft }), 250);
+    return () => window.clearTimeout(timer);
+  }, [searchDraft, filters.search]);
 
   useEffect(() => {
     if (documentState.status === 'success' && meta.total > 0 && filters.page > totalPages) {
@@ -45,7 +53,7 @@ export default function DocumentsPage() {
     <header className="page-header documents-header"><div><h1 id="documents-title">Documents</h1><p className="page-header__description">Find every quotation, invoice, and receipt in one workspace.</p></div><div className="page-header__actions"><CreateDocumentMenu /></div></header>
     <nav className="documents-tabs" aria-label="Document types">{documentListTypes.map((type) => <button key={type} className={`documents-tab${filters.type === type ? ' is-active' : ''}`} type="button" aria-current={filters.type === type ? 'page' : undefined} onClick={() => updateUrl({ type, status: '', sort: '-created_at' })}>{documentListConfig(type).label}</button>)}</nav>
     <div className="documents-workspace">
-      <div className="documents-toolbar"><label className="field"><span className="field__label">Search {config.label.toLowerCase()}</span><input type="search" value={filters.search} placeholder={`Search ${config.singular} number or notes`} onChange={(event) => updateUrl({ search: event.target.value })} /></label><label className="field"><span className="field__label">Client</span><select value={filters.client_id} onChange={(event) => updateUrl({ client_id: event.target.value })}><option value="">All clients</option>{(clientsState.data?.data || []).map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select></label>{config.statuses.length > 0 && <label className="field"><span className="field__label">Status</span><select value={filters.status} onChange={(event) => updateUrl({ status: event.target.value })}><option value="">All statuses</option>{config.statuses.map((status) => <option key={status} value={status}>{status[0] + status.slice(1).toLowerCase()}</option>)}</select></label>}<label className="field"><span className="field__label">Sort</span><select value={filters.sort} onChange={(event) => updateUrl({ sort: event.target.value })}>{config.sorts.map((sort) => <option key={sort.value} value={sort.value}>{sort.label}</option>)}</select></label>{hasActiveFilters(filters) && <button className="text-button documents-clear" type="button" onClick={clearFilters}>Clear filters</button>}</div>
+      <div className="documents-toolbar"><label className="field"><span className="field__label">Search {config.label.toLowerCase()}</span><input type="search" value={searchDraft} placeholder={`Search ${config.singular} number or notes`} onChange={(event) => setSearchDraft(event.target.value)} /></label><label className="field"><span className="field__label">Client</span><select value={filters.client_id} onChange={(event) => updateUrl({ client_id: event.target.value })}><option value="">All clients</option>{(clientsState.data?.data || []).map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select></label>{config.statuses.length > 0 && <label className="field"><span className="field__label">Status</span><select value={filters.status} onChange={(event) => updateUrl({ status: event.target.value })}><option value="">All statuses</option>{config.statuses.map((status) => <option key={status} value={status}>{status[0] + status.slice(1).toLowerCase()}</option>)}</select></label>}<label className="field"><span className="field__label">Sort</span><select value={filters.sort} onChange={(event) => updateUrl({ sort: event.target.value })}>{config.sorts.map((sort) => <option key={sort.value} value={sort.value}>{sort.label}</option>)}</select></label>{hasActiveFilters(filters) && <button className="text-button documents-clear" type="button" onClick={clearFilters}>Clear filters</button>}</div>
       {documentState.status === 'loading' && <div className="documents-feedback" role="status"><LoadingState label="Loading documents..." /></div>}
       {documentState.status === 'error' && <RetryState message="We couldn't load these documents. Your records are safe." onRetry={documentState.retry} />}
       {documentState.status === 'success' && documents.length === 0 && <EmptyState title={hasActiveFilters(filters) ? 'No matching documents' : `No ${config.label.toLowerCase()} yet`} description={hasActiveFilters(filters) ? 'Try changing or clearing the filters.' : `Create your first ${config.singular} to start building your document history.`} action={!hasActiveFilters(filters) ? <Link className="button" to={`/documents/${config.pathSegment}/new`}>Create {config.singular}</Link> : undefined} />}
