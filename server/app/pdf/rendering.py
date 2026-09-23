@@ -1,6 +1,7 @@
 """Shared ReportLab document rendering primitives."""
 
 from io import BytesIO
+from textwrap import wrap
 from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
@@ -98,12 +99,19 @@ def _items(context: DocumentRenderContext, styles):
         _paragraph('Amount', styles['RightSmallText']),
     ]]
     for item in context.items:
-        rows.append([
-            _paragraph(item.description, styles['BodyText']),
-            _paragraph(item.quantity, styles['RightSmallText']),
-            _paragraph(_money(context, item.unit_price), styles['RightSmallText']),
-            _paragraph(_money(context, item.line_total), styles['RightSmallText']),
-        ])
+        # Keep a very long description from creating a single unsplittable
+        # table row. Each continuation row remains part of the same item and
+        # carries the amount only on the final row.
+        lines = wrap(str(item.description), width=70, break_long_words=True, break_on_hyphens=False) or ['']
+        for start in range(0, len(lines), 24):
+            chunk = ' '.join(lines[start:start + 24])
+            final = start + 24 >= len(lines)
+            rows.append([
+                _paragraph(chunk, styles['BodyText']),
+                _paragraph(item.quantity if final else '', styles['RightSmallText']),
+                _paragraph(_money(context, item.unit_price) if final else '', styles['RightSmallText']),
+                _paragraph(_money(context, item.line_total) if final else '', styles['RightSmallText']),
+            ])
     table = Table(rows, colWidths=[85 * mm, 25 * mm, 35 * mm, 35 * mm], repeatRows=1)
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#17324D')),

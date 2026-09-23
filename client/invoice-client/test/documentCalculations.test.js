@@ -27,3 +27,14 @@ test('rejects invalid quantities, descriptions, and excessive precision', () => 
   assert.throws(() => calculateDocumentTotals({ items: [{ description: '', quantity: '1', unit_price: '1.00' }] }), /description/);
   assert.throws(() => calculateDocumentTotals({ items: [{ description: 'Service', quantity: '1.0001', unit_price: '1.00' }] }), /Quantity is invalid/);
 });
+
+test('rejects values outside backend numeric precision', () => {
+  assert.throws(
+    () => calculateDocumentTotals({ items: [{ description: 'Service', quantity: '1000000000', unit_price: '0' }] }),
+    (error) => error instanceof DocumentCalculationError && error.code === 'INVALID_QUANTITY',
+  );
+  assert.throws(
+    () => calculateDocumentTotals({ items: [{ description: 'Service', quantity: '1', unit_price: '0' }], taxRate: '1000' }),
+    (error) => error instanceof DocumentCalculationError && error.code === 'INVALID_TAX_RATE',
+  );
+});

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { createReceipt } from '../api/documentsApi.js';
 import { isAuthPreviewEnabled } from '../auth/authPreview.js';
 import { useAuth } from '../auth/useAuth.js';
@@ -10,14 +10,16 @@ import useUnsavedDocumentChanges from '../features/documents/useUnsavedDocumentC
 import { getPreviewClient } from '../features/clients/clientPreview.js';
 import { createPreviewReceipt } from '../features/receipts/receiptPreview.js';
 import { receiptPath, validateReceiptDates } from '../features/receipts/receiptData.js';
+import { routePaths } from '../utils/routePaths.js';
 
 export default function ReceiptCreatePage() {
   const { businessProfile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const cache = useDataCache();
-  const initialDraft = useMemo(() => ({ ...createDocumentDraft({ type: 'receipt', businessProfile }), ...(isAuthPreviewEnabled ? { client_id: 'client-001' } : {}) }), [businessProfile]);
+  const initialDraft = useMemo(() => location.state?.draft || ({ ...createDocumentDraft({ type: 'receipt', businessProfile }), ...(isAuthPreviewEnabled ? { client_id: 'client-001' } : {}) }), [businessProfile, location.state]);
   const [draft, setDraft] = useState(initialDraft);
-  const [client, setClient] = useState(() => (isAuthPreviewEnabled ? getPreviewClient('client-001') : null));
+  const [client, setClient] = useState(() => location.state?.client || (isAuthPreviewEnabled ? getPreviewClient('client-001') : null));
   const [state, setState] = useState({ pending: false, message: '', error: '' });
   const dirty = JSON.stringify(draft) !== JSON.stringify(initialDraft);
   useUnsavedDocumentChanges(dirty);
@@ -30,6 +32,7 @@ export default function ReceiptCreatePage() {
     try {
       const receipt = isAuthPreviewEnabled ? createPreviewReceipt(payload) : await createReceipt(payload);
       cache.removeByPrefix('receipts:list:');
+      cache.removeByPrefix('documents:receipts:list:');
       cache.remove('dashboard:summary');
       navigate(receiptPath(receipt.id), { replace: true, state: { message: 'Receipt saved successfully.' } });
     } catch (error) {
@@ -42,5 +45,5 @@ export default function ReceiptCreatePage() {
     setClient(selectedClient || null);
   }
 
-  return <section className="document-page" aria-labelledby="receipt-create-title"><header className="page-header"><div><h1 id="receipt-create-title">New receipt</h1><p className="page-header__description">Record a payment with a clear receipt and live totals.</p></div></header><DocumentEditor draft={draft} client={client} onChange={setDraft} onClientChange={handleClientChange} onSubmit={submit} onAddClient={() => setState((current) => ({ ...current, message: 'Add the client first from the Clients workspace, then return here to select them.' }))} submitting={state.pending} message={state.message} error={state.error} /></section>;
+  return <section className="document-page" aria-labelledby="receipt-create-title"><header className="page-header"><div><h1 id="receipt-create-title">New receipt</h1><p className="page-header__description">Record a payment with a clear receipt and live totals.</p></div></header><DocumentEditor draft={draft} client={client} onChange={setDraft} onClientChange={handleClientChange} onSubmit={submit} onAddClient={() => navigate(routePaths.clientNew, { state: { returnTo: location.pathname, draft } })} submitting={state.pending} message={state.message} error={state.error} /></section>;
 }

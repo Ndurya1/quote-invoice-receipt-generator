@@ -9,7 +9,7 @@ export default function QuotationConversionDialog({ open, quotation, pending = f
     if (!values.issue_date) { setValidationError('Choose an invoice issue date.'); return; }
     if (values.due_date && values.due_date < values.issue_date) { setValidationError('Due date cannot precede issue date.'); return; }
     setValidationError('');
-    onConfirm(values);
+    onConfirm({ ...values, due_date: values.due_date || null });
   }
 
   if (!open) return null;

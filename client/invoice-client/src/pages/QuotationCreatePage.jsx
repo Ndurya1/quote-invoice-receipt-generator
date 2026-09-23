@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { createQuotation } from '../api/documentsApi.js';
 import { isAuthPreviewEnabled } from '../auth/authPreview.js';
 import { useAuth } from '../auth/useAuth.js';
@@ -10,14 +10,16 @@ import useUnsavedDocumentChanges from '../features/documents/useUnsavedDocumentC
 import { createPreviewQuotation } from '../features/quotations/quotationPreview.js';
 import { quotationPath, validateQuotationDates } from '../features/quotations/quotationData.js';
 import { getPreviewClient } from '../features/clients/clientPreview.js';
+import { routePaths } from '../utils/routePaths.js';
 
 export default function QuotationCreatePage() {
   const { businessProfile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const cache = useDataCache();
-  const initialDraft = useMemo(() => ({ ...createDocumentDraft({ type: 'quotation', businessProfile }), ...(isAuthPreviewEnabled ? { client_id: 'client-001' } : {}) }), [businessProfile]);
+  const initialDraft = useMemo(() => location.state?.draft || ({ ...createDocumentDraft({ type: 'quotation', businessProfile }), ...(isAuthPreviewEnabled ? { client_id: 'client-001' } : {}) }), [businessProfile, location.state]);
   const [draft, setDraft] = useState(initialDraft);
-  const [client, setClient] = useState(() => (isAuthPreviewEnabled ? getPreviewClient('client-001') : null));
+  const [client, setClient] = useState(() => location.state?.client || (isAuthPreviewEnabled ? getPreviewClient('client-001') : null));
   const [state, setState] = useState({ pending: false, message: '', error: '' });
   const dirty = JSON.stringify(draft) !== JSON.stringify(initialDraft);
   useUnsavedDocumentChanges(dirty);
@@ -30,6 +32,7 @@ export default function QuotationCreatePage() {
     try {
       const quotation = isAuthPreviewEnabled ? createPreviewQuotation(payload) : await createQuotation(payload);
       cache.removeByPrefix('quotations:list:');
+      cache.removeByPrefix('documents:quotations:list:');
       cache.remove('dashboard:summary');
       navigate(quotationPath(quotation.id), { replace: true, state: { message: 'Quotation saved successfully.' } });
     } catch (error) {
@@ -44,6 +47,6 @@ export default function QuotationCreatePage() {
 
   return <section className="document-page" aria-labelledby="quotation-create-title">
     <header className="page-header"><div><h1 id="quotation-create-title">New quotation</h1><p className="page-header__description">Prepare a clear proposal with live totals before saving it.</p></div></header>
-    <DocumentEditor draft={draft} client={client} onChange={setDraft} onClientChange={handleClientChange} onSubmit={submit} onAddClient={() => setState((current) => ({ ...current, message: 'Add the client first from the Clients workspace, then return here to select them.' }))} submitting={state.pending} message={state.message} error={state.error} />
+    <DocumentEditor draft={draft} client={client} onChange={setDraft} onClientChange={handleClientChange} onSubmit={submit} onAddClient={() => navigate(routePaths.clientNew, { state: { returnTo: location.pathname, draft } })} submitting={state.pending} message={state.message} error={state.error} />
   </section>;
 }

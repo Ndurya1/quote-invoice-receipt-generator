@@ -50,6 +50,7 @@ function ReceiptEditLoaded({ receipt }) {
       const updated = isAuthPreviewEnabled ? updatePreviewReceipt(receipt.id, payload) : await updateReceipt(receipt.id, payload);
       cache.remove(`receipts:detail:${receipt.id}`);
       cache.removeByPrefix('receipts:list:');
+      cache.removeByPrefix('documents:receipts:list:');
       navigate(receiptPath(updated.id), { replace: true, state: { message: 'Receipt updated successfully.' } });
     } catch (error) {
       setState({ pending: false, error: receiptErrorMessage(error) });

@@ -34,6 +34,7 @@ function ReceiptDetailLoaded({ receipt, retry }) {
   function invalidate() {
     cache.remove(`receipts:detail:${receipt.id}`);
     cache.removeByPrefix('receipts:list:');
+    cache.removeByPrefix('documents:receipts:list:');
     cache.remove('dashboard:summary');
   }
 

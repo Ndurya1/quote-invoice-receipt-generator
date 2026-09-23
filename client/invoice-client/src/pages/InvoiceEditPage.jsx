@@ -50,6 +50,7 @@ function InvoiceEditLoaded({ invoice }) {
       const updated = isAuthPreviewEnabled ? updatePreviewInvoice(invoice.id, payload) : await updateInvoice(invoice.id, payload);
       cache.remove(`invoices:detail:${invoice.id}`);
       cache.removeByPrefix('invoices:list:');
+      cache.removeByPrefix('documents:invoices:list:');
       navigate(invoicePath(updated.id), { replace: true, state: { message: 'Invoice updated successfully.' } });
     } catch (error) {
       if (error.status === 409) {

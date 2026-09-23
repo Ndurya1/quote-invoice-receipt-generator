@@ -39,7 +39,7 @@ export function useClientsList(query) {
     const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load(controller.signal);
-    return () => controller.abort();
+    return () => { requestId.current += 1; controller.abort(); };
   }, [load, user?.id]);
 
   return { ...state, retry: () => load(new AbortController().signal) };
@@ -74,7 +74,7 @@ export function useClient(clientId) {
     const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load(controller.signal);
-    return () => controller.abort();
+    return () => { requestId.current += 1; controller.abort(); };
   }, [load, user?.id]);
 
   return { ...state, retry: () => load(new AbortController().signal) };

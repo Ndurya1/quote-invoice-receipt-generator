@@ -38,6 +38,8 @@ function InvoiceDetailLoaded({ invoice, retry }) {
   function invalidate() {
     cache.remove(`invoices:detail:${invoice.id}`);
     cache.removeByPrefix('invoices:list:');
+    cache.removeByPrefix('documents:invoices:list:');
+    cache.removeByPrefix('documents:receipts:list:');
     cache.remove('dashboard:summary');
   }
 

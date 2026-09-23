@@ -14,7 +14,7 @@ export default function RouteFocusManager() {
       document.getElementById('main-content')?.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [location.pathname, location.search]);
+  }, [location.pathname]);
 
   return null;
 }

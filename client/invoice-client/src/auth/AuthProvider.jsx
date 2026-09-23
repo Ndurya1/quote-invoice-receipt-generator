@@ -22,6 +22,7 @@ export default function AuthProvider({ children }) {
   const [sessionMessage, setSessionMessage] = useState('');
 
   const clearLocalSession = useCallback(() => {
+    apiClient.invalidateSession();
     apiClient.sessionStore.clear();
     cache.clear();
     clearOnboardingDraft();
@@ -75,7 +76,8 @@ export default function AuthProvider({ children }) {
         setSessionMessage('Your session has expired. Please log in again.');
         return { status: authStatuses.anonymous, user: null, businessProfile: null };
       }
-      clearLocalSession();
+      setSessionMessage('We could not restore your session. Check your connection and try again.');
+      setStatus(authStatuses.anonymous);
       throw error;
     }
   }, [clearLocalSession]);

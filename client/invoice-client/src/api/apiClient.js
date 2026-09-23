@@ -1,4 +1,4 @@
-import { SessionExpiredError } from './apiErrors.js';
+import { ApiError, SessionExpiredError } from './apiErrors.js';
 import { getApiBaseUrl } from './apiConfig.js';
 import { parseApiResponse } from './apiResponse.js';
 import { sessionStore as defaultSessionStore } from './sessionStore.js';
@@ -31,6 +31,12 @@ export function createApiClient({
   if (!fetchImpl) throw new Error('An available fetch implementation is required.');
   const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
   let refreshPromise = null;
+  let sessionGeneration = 0;
+
+  function invalidateSession() {
+    sessionGeneration += 1;
+    refreshPromise = null;
+  }
 
   async function send(path, { method = 'GET', query, body, headers = {}, signal, skipAuth = false } = {}) {
     const requestHeaders = new Headers(headers);
@@ -52,7 +58,9 @@ export function createApiClient({
     const refreshToken = session.getRefreshToken();
     if (!refreshToken) throw new SessionExpiredError();
     if (!refreshPromise) {
-      refreshPromise = send('/auth/refresh', {
+      const generation = sessionGeneration;
+      let currentPromise;
+      currentPromise = send('/auth/refresh', {
         method: 'POST',
         body: { refresh_token: refreshToken },
         skipAuth: true,
@@ -61,17 +69,25 @@ export function createApiClient({
         .then((payload) => {
           const token = payload?.data?.access_token;
           if (!token) throw new Error('Refresh response did not contain an access token.');
+          if (generation !== sessionGeneration || session.getRefreshToken() !== refreshToken) {
+            throw new SessionExpiredError();
+          }
           session.setAccessToken(token);
           return token;
         })
         .catch((error) => {
-          session.clear();
-          onSessionExpired?.(error);
-          throw new SessionExpiredError(error);
+          if (generation !== sessionGeneration) throw new SessionExpiredError(error);
+          if (error instanceof ApiError && error.status === 401) {
+            session.clear();
+            onSessionExpired?.(error);
+            throw new SessionExpiredError(error);
+          }
+          throw error;
         })
         .finally(() => {
-          refreshPromise = null;
+          if (refreshPromise === currentPromise) refreshPromise = null;
         });
+      refreshPromise = currentPromise;
     }
     return refreshPromise;
   }
@@ -82,6 +98,12 @@ export function createApiClient({
     if (shouldRefresh) {
       await refreshAccessToken();
       const retryResponse = await send(path, options);
+      if (retryResponse.status === 401) {
+        const error = await parseApiResponse(retryResponse).catch((parseError) => parseError);
+        session.clear();
+        onSessionExpired?.(error);
+        throw new SessionExpiredError(error);
+      }
       return parseApiResponse(retryResponse);
     }
     return parseApiResponse(response);
@@ -95,13 +117,23 @@ export function createApiClient({
       await refreshAccessToken();
       finalResponse = await send(path, options);
     }
+    if (finalResponse.status === 401 && shouldRefresh) {
+      const error = await parseApiResponse(finalResponse).catch((parseError) => parseError);
+      session.clear();
+      onSessionExpired?.(error);
+      throw new SessionExpiredError(error);
+    }
+    const contentType = finalResponse.headers.get('content-type') || '';
+    if (finalResponse.ok && !/^application\/pdf(?:\s*;|$)/i.test(contentType)) {
+      throw new ApiError({ status: finalResponse.status, code: 'INVALID_PDF_RESPONSE', message: 'The server returned an invalid PDF response.' });
+    }
     if (!finalResponse.ok) {
       await parseApiResponse(finalResponse);
     }
     return { blob: await finalResponse.blob(), filename: filenameFromHeaders(finalResponse.headers, fallbackFilename) };
   }
 
-  return { request, requestBlob, refreshAccessToken, sessionStore: session };
+  return { request, requestBlob, refreshAccessToken, invalidateSession, sessionStore: session };
 }
 
 export const apiClient = createApiClient({ onSessionExpired: emitSessionExpired });

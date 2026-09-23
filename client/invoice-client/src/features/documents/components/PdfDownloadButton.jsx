@@ -10,11 +10,11 @@ export default function PdfDownloadButton({ type, id }) {
     if (isAuthPreviewEnabled) { setState('preview'); return; }
     setState('loading');
     try {
-      const blob = await pdfDownloads[type](id);
+      const { blob, filename } = await pdfDownloads[type](id);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${type}-${id}.pdf`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
