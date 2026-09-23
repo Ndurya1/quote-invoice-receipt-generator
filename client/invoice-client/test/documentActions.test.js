@@ -10,6 +10,7 @@ test('maps document lifecycle states to valid actions', () => {
   assert.deepEqual(allowedDocumentActions({ type: 'invoice', status: 'DRAFT', sourceQuoteId: 'quote-1' }), ['markSent', 'cancel', 'convertReceipt']);
   assert.deepEqual(allowedDocumentActions({ type: 'invoice', status: 'SENT' }), ['markPaid', 'cancel', 'convertReceipt']);
   assert.deepEqual(allowedDocumentActions({ type: 'invoice', status: 'PAID' }), ['convertReceipt']);
+  assert.deepEqual(allowedDocumentActions({ type: 'receipt', sourceInvoiceId: null }), ['edit', 'delete']);
   assert.deepEqual(allowedDocumentActions({ type: 'receipt', status: 'DRAFT', sourceInvoiceId: 'invoice-1' }), []);
 });
 
