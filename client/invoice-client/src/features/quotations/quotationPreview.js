@@ -1,4 +1,5 @@
 import { calculateDocumentTotals } from '../documents/documentCalculations.js';
+import { listPreviewDocuments } from '../documents/documentListPreview.js';
 import { getPreviewClient } from '../clients/clientPreview.js';
 
 let nextPreviewNumber = 2;
@@ -48,6 +49,11 @@ export function getPreviewQuotation(id) {
   seed();
   const existing = previewStore.get(id);
   return clone(existing || buildQuotation(id));
+}
+
+export function listPreviewQuotations(params) {
+  seed();
+  return listPreviewDocuments([...previewStore.values()], params, getPreviewClient, 'quote_number');
 }
 
 export function createPreviewQuotation(payload) {

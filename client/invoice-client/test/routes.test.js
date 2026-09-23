@@ -6,6 +6,7 @@ test('defines the public and protected route map', () => {
   assert.equal(routePaths.home, '/');
   assert.equal(routePaths.register, '/register');
   assert.equal(routePaths.dashboard, '/dashboard');
+  assert.equal(routePaths.documents, '/documents');
   assert.equal(routePaths.quotationDetail, '/documents/quotations/:quoteId');
   assert.equal(routePaths.receiptsNew, '/documents/receipts/new');
   assert.equal(routePaths.receiptDetail, '/documents/receipts/:receiptId');

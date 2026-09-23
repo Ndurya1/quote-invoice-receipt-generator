@@ -29,6 +29,7 @@ import InvoiceEditPage from '../pages/InvoiceEditPage.jsx';
 import ReceiptCreatePage from '../pages/ReceiptCreatePage.jsx';
 import ReceiptDetailPage from '../pages/ReceiptDetailPage.jsx';
 import ReceiptEditPage from '../pages/ReceiptEditPage.jsx';
+import DocumentsPage from '../pages/DocumentsPage.jsx';
 
 function Placeholder({ title, description }) {
   return <RoutePlaceholderPage title={title} description={description} />;
@@ -66,7 +67,7 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
         <Route path={routePaths.dashboard} element={<DashboardPage />} />
-        <Route path={routePaths.documents} element={<Placeholder title="Documents" description="The unified documents workspace is ready for its feature slice." />} />
+        <Route path={routePaths.documents} element={<DocumentsPage />} />
         <Route path={routePaths.quotationsNew} element={<DocumentCreateRoute type="quotation" title="Create quotation" />} />
         <Route path={routePaths.quotationDetail} element={<QuotationDetailPage />} />
         <Route path={routePaths.quotationEdit} element={<QuotationEditPage />} />

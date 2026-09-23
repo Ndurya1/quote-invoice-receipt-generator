@@ -6,4 +6,6 @@ test('creates deterministic filter keys', () => {
   assert.equal(queryKeys.clientsList({ search: 'Acme', page: 1 }), queryKeys.clientsList({ page: 1, search: 'Acme' }));
   assert.notEqual(queryKeys.clientsList({ page: 1 }), queryKeys.clientsList({ page: 2 }));
   assert.equal(queryKeys.invoiceDetail('invoice-1'), 'invoices:detail:invoice-1');
+  assert.equal(queryKeys.documentsList('receipts', { page: 1 }), queryKeys.documentsList('receipts', { page: 1 }));
+  assert.notEqual(queryKeys.documentsList('quotes', { page: 1 }), queryKeys.documentsList('invoices', { page: 1 }));
 });
