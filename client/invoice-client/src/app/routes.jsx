@@ -18,9 +18,15 @@ import ClientCreatePage from '../pages/ClientCreatePage.jsx';
 import ClientDetailPage from '../pages/ClientDetailPage.jsx';
 import ClientEditPage from '../pages/ClientEditPage.jsx';
 import RoutePlaceholderPage from '../pages/RoutePlaceholderPage';
+import DocumentFoundationPreviewPage from '../pages/DocumentFoundationPreviewPage.jsx';
+import { isAuthPreviewEnabled } from '../auth/authPreview.js';
 
 function Placeholder({ title, description }) {
   return <RoutePlaceholderPage title={title} description={description} />;
+}
+
+function DocumentCreateRoute({ type, title }) {
+  return isAuthPreviewEnabled ? <DocumentFoundationPreviewPage type={type} /> : <Placeholder title={title} description={`${title} is ready for its feature slice.`} />;
 }
 
 export default function AppRoutes() {
@@ -49,13 +55,13 @@ export default function AppRoutes() {
         <Route element={<AppLayout />}>
         <Route path={routePaths.dashboard} element={<DashboardPage />} />
         <Route path={routePaths.documents} element={<Placeholder title="Documents" description="The unified documents workspace is ready for its feature slice." />} />
-        <Route path={routePaths.quotationsNew} element={<Placeholder title="Create quotation" description="Quotation creation is ready for its feature slice." />} />
+        <Route path={routePaths.quotationsNew} element={<DocumentCreateRoute type="quotation" title="Create quotation" />} />
         <Route path={routePaths.quotationDetail} element={<Placeholder title="Quotation detail" description="Quotation detail is ready for its feature slice." />} />
         <Route path={routePaths.quotationEdit} element={<Placeholder title="Edit quotation" description="Quotation editing is ready for its feature slice." />} />
-        <Route path={routePaths.invoicesNew} element={<Placeholder title="Create invoice" description="Invoice creation is ready for its feature slice." />} />
+        <Route path={routePaths.invoicesNew} element={<DocumentCreateRoute type="invoice" title="Create invoice" />} />
         <Route path={routePaths.invoiceDetail} element={<Placeholder title="Invoice detail" description="Invoice detail is ready for its feature slice." />} />
         <Route path={routePaths.invoiceEdit} element={<Placeholder title="Edit invoice" description="Invoice editing is ready for its feature slice." />} />
-        <Route path={routePaths.receiptsNew} element={<Placeholder title="Create receipt" description="Receipt creation is ready for its feature slice." />} />
+        <Route path={routePaths.receiptsNew} element={<DocumentCreateRoute type="receipt" title="Create receipt" />} />
         <Route path={routePaths.receiptDetail} element={<Placeholder title="Receipt detail" description="Receipt detail is ready for its feature slice." />} />
         <Route path={routePaths.receiptEdit} element={<Placeholder title="Edit receipt" description="Receipt editing is ready for its feature slice." />} />
         <Route path={routePaths.clients} element={<ClientsPage />} />
