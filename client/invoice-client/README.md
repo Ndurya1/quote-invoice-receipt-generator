@@ -43,6 +43,7 @@ The API client owns JSON envelopes, backend errors, bearer-token attachment, acc
 - The unified document workspace is implemented at `/documents` with URL-backed quotation, invoice and receipt tabs, search, client/status filters, sorting, pagination, responsive rows, empty/loading/error states, and context-valid edit links.
 - Business settings are implemented at `/settings/business` with full-profile replacement that preserves unsupported fields, and the read-only account page is available at `/settings/account` with local logout.
 - The public landing page keeps anonymous acquisition links and sends authenticated users to the dashboard or unfinished onboarding setup.
+- Release QA coverage and the manual responsive/accessibility checklist are documented in `../docs/RELEASE_QA.md`.
 - Protected pages share a responsive application shell with desktop sidebar navigation, mobile bottom navigation, account controls, route-focus management, and parent-route active states.
 - No backend calls, payment processing, uploads or document generation are implemented by this page.
 
