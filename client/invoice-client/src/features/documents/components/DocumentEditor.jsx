@@ -6,7 +6,7 @@ import TaxDiscountFields from './TaxDiscountFields.jsx';
 import { calculateDocumentTotals } from '../documentCalculations.js';
 import { documentConfig, serializeDocumentPayload } from '../documentDraft.js';
 
-export default function DocumentEditor({ draft, client, onChange, onSubmit, onAddClient, onClientChange, submitting = false, message = '' }) {
+export default function DocumentEditor({ draft, client, onChange, onSubmit, onAddClient, onClientChange, submitting = false, message = '', error = '' }) {
   const config = documentConfig(draft.type);
   const totals = useMemo(() => {
     try {
@@ -26,6 +26,7 @@ export default function DocumentEditor({ draft, client, onChange, onSubmit, onAd
   return (
     <form className="document-editor" onSubmit={submit}>
       {message && <div className="alert alert--success" role="status">{message}</div>}
+      {error && <div className="form-error" role="alert">{error}</div>}
       <section className="document-form-section" aria-labelledby="document-details-title">
         <div className="document-form-section__heading"><h2 id="document-details-title">Document details</h2><p>Choose the client, date, and currency for this {config.label.toLowerCase()}.</p></div>
         <ClientSelector value={draft.client_id} selectedClient={client} onChange={(client_id, selectedClient) => (onClientChange ? onClientChange(client_id, selectedClient) : update({ client_id }))} onAddClient={onAddClient} />

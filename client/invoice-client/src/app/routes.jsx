@@ -20,12 +20,16 @@ import ClientEditPage from '../pages/ClientEditPage.jsx';
 import RoutePlaceholderPage from '../pages/RoutePlaceholderPage';
 import DocumentFoundationPreviewPage from '../pages/DocumentFoundationPreviewPage.jsx';
 import { isAuthPreviewEnabled } from '../auth/authPreview.js';
+import QuotationCreatePage from '../pages/QuotationCreatePage.jsx';
+import QuotationDetailPage from '../pages/QuotationDetailPage.jsx';
+import QuotationEditPage from '../pages/QuotationEditPage.jsx';
 
 function Placeholder({ title, description }) {
   return <RoutePlaceholderPage title={title} description={description} />;
 }
 
 function DocumentCreateRoute({ type, title }) {
+  if (type === 'quotation') return <QuotationCreatePage />;
   return isAuthPreviewEnabled ? <DocumentFoundationPreviewPage type={type} /> : <Placeholder title={title} description={`${title} is ready for its feature slice.`} />;
 }
 
@@ -56,8 +60,8 @@ export default function AppRoutes() {
         <Route path={routePaths.dashboard} element={<DashboardPage />} />
         <Route path={routePaths.documents} element={<Placeholder title="Documents" description="The unified documents workspace is ready for its feature slice." />} />
         <Route path={routePaths.quotationsNew} element={<DocumentCreateRoute type="quotation" title="Create quotation" />} />
-        <Route path={routePaths.quotationDetail} element={<Placeholder title="Quotation detail" description="Quotation detail is ready for its feature slice." />} />
-        <Route path={routePaths.quotationEdit} element={<Placeholder title="Edit quotation" description="Quotation editing is ready for its feature slice." />} />
+        <Route path={routePaths.quotationDetail} element={<QuotationDetailPage />} />
+        <Route path={routePaths.quotationEdit} element={<QuotationEditPage />} />
         <Route path={routePaths.invoicesNew} element={<DocumentCreateRoute type="invoice" title="Create invoice" />} />
         <Route path={routePaths.invoiceDetail} element={<Placeholder title="Invoice detail" description="Invoice detail is ready for its feature slice." />} />
         <Route path={routePaths.invoiceEdit} element={<Placeholder title="Edit invoice" description="Invoice editing is ready for its feature slice." />} />

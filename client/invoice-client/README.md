@@ -37,6 +37,7 @@ The API client owns JSON envelopes, backend errors, bearer-token attachment, acc
 - The authenticated dashboard is implemented at `/dashboard` with API-backed counts, overdue attention, creation actions, recent-document filtering, empty/loading/error states, and a responsive mobile document list.
 - Client management is implemented at `/clients`, `/clients/new`, `/clients/:clientId`, and `/clients/:clientId/edit` with URL-backed search/sort/pagination, reusable forms, owner-scoped API mutations, delete-conflict handling, and developer preview fixtures.
 - The shared document foundation is implemented in developer preview mode at `/documents/quotations/new`, `/documents/invoices/new`, and `/documents/receipts/new`. It includes exact decimal totals, type-specific drafts, client selection, line-item editing, tax/discount controls, payload hydration, lifecycle action mapping, unsaved-change protection, and PDF download plumbing.
+- Quotation create, detail, edit, delete, send, accept, reject, conversion, and PDF flows are implemented at `/documents/quotations/new`, `/documents/quotations/:quoteId`, and `/documents/quotations/:quoteId/edit`, with a developer fixture quotation available at `/documents/quotations/quote-preview-001`.
 - Protected pages share a responsive application shell with desktop sidebar navigation, mobile bottom navigation, account controls, route-focus management, and parent-route active states.
 - No backend calls, payment processing, uploads or document generation are implemented by this page.
 
