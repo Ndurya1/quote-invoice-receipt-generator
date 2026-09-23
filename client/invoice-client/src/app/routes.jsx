@@ -30,6 +30,8 @@ import ReceiptCreatePage from '../pages/ReceiptCreatePage.jsx';
 import ReceiptDetailPage from '../pages/ReceiptDetailPage.jsx';
 import ReceiptEditPage from '../pages/ReceiptEditPage.jsx';
 import DocumentsPage from '../pages/DocumentsPage.jsx';
+import BusinessSettingsPage from '../pages/settings/BusinessSettingsPage.jsx';
+import AccountSettingsPage from '../pages/settings/AccountSettingsPage.jsx';
 
 function Placeholder({ title, description }) {
   return <RoutePlaceholderPage title={title} description={description} />;
@@ -81,8 +83,8 @@ export default function AppRoutes() {
         <Route path={routePaths.clientNew} element={<ClientCreatePage />} />
         <Route path={routePaths.clientDetail} element={<ClientDetailPage />} />
         <Route path={routePaths.clientEdit} element={<ClientEditPage />} />
-        <Route path={routePaths.businessSettings} element={<Placeholder title="Business settings" description="Business settings are ready for their feature slice." />} />
-        <Route path={routePaths.accountSettings} element={<Placeholder title="Account" description="Account settings are ready for their feature slice." />} />
+        <Route path={routePaths.businessSettings} element={<BusinessSettingsPage />} />
+        <Route path={routePaths.accountSettings} element={<AccountSettingsPage />} />
         </Route>
       </Route>
 

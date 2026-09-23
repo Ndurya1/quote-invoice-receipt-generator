@@ -41,6 +41,8 @@ The API client owns JSON envelopes, backend errors, bearer-token attachment, acc
 - Invoice create, detail, edit, delete, send, paid, cancel, receipt conversion, and PDF flows are implemented at `/documents/invoices/new`, `/documents/invoices/:invoiceId`, and `/documents/invoices/:invoiceId/edit`, with direct, quotation-derived, and lifecycle-state developer fixtures.
 - Receipt create, detail, edit, delete, source-invoice protection, and PDF flows are implemented at `/documents/receipts/new`, `/documents/receipts/:receiptId`, and `/documents/receipts/:receiptId/edit`, with direct and invoice-linked developer fixtures.
 - The unified document workspace is implemented at `/documents` with URL-backed quotation, invoice and receipt tabs, search, client/status filters, sorting, pagination, responsive rows, empty/loading/error states, and context-valid edit links.
+- Business settings are implemented at `/settings/business` with full-profile replacement that preserves unsupported fields, and the read-only account page is available at `/settings/account` with local logout.
+- The public landing page keeps anonymous acquisition links and sends authenticated users to the dashboard or unfinished onboarding setup.
 - Protected pages share a responsive application shell with desktop sidebar navigation, mobile bottom navigation, account controls, route-focus management, and parent-route active states.
 - No backend calls, payment processing, uploads or document generation are implemented by this page.
 

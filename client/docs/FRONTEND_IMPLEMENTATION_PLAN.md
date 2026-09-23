@@ -204,13 +204,13 @@ Exit: Dashboard, Clients, and navigation can link to one predictable searchable 
 
 ## 15. Phase 13 — Settings and landing integration
 
-- [ ] **SET-01 — Build business settings form.** Load the profile and expose only supported fields while preserving an existing hidden `logo_url` in the full PUT.
-- [ ] **SET-02 — Protect full-replacement updates.** Build the outgoing payload from loaded profile plus validated edits; test that omitted UI fields are not erased accidentally.
-- [ ] **SET-03 — Build read-only account page.** Show name, email, optional phone, session limitations, and logout without edit/password controls.
-- [ ] **SET-04 — Test settings.** Cover null optional fields, currency changes, full PUT, preserved logo URL, failed saves, and owner-session cleanup.
-- [ ] **LAND-01 — Enable landing account links.** Replace disabled controls with `/register` and `/login`; use dashboard CTA for authenticated users.
-- [ ] **LAND-02 — Audit landing copy against implemented behavior.** Remove stale availability notes and ensure no payment, sending, password recovery, catalogue, or pricing claims appear.
-- [ ] **LAND-03 — Re-run landing regression checks.** Preserve the existing one-`h1`, fragment links, mobile navigation, calculated demo total, focus, and reduced-motion behavior.
+- [x] **SET-01 — Build business settings form.** Load the profile and expose only supported fields while preserving an existing hidden `logo_url` in the full PUT.
+- [x] **SET-02 — Protect full-replacement updates.** Build the outgoing payload from loaded profile plus validated edits; test that omitted UI fields are not erased accidentally.
+- [x] **SET-03 — Build read-only account page.** Show name, email, optional phone, session limitations, and logout without edit/password controls.
+- [x] **SET-04 — Test settings.** Cover null optional fields, currency changes, full PUT, preserved logo URL, failed saves, and owner-session cleanup.
+- [x] **LAND-01 — Enable landing account links.** Replace disabled controls with `/register` and `/login`; use dashboard CTA for authenticated users.
+- [x] **LAND-02 — Audit landing copy against implemented behavior.** Remove stale availability notes and ensure no payment, sending, password recovery, catalogue, or pricing claims appear.
+- [x] **LAND-03 — Re-run landing regression checks.** Preserve the existing one-`h1`, fragment links, mobile navigation, calculated demo total, focus, and reduced-motion behavior.
 
 Exit: public acquisition, setup, workspace, and settings form one continuous product journey.
 
