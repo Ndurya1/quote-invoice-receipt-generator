@@ -12,6 +12,12 @@ test('creates type-specific drafts with profile currency and editable fields', (
   assert.equal(receipt.terms, undefined);
 });
 
+test('falls back safely while the business profile is still loading', () => {
+  const draft = createDocumentDraft({ type: 'invoice', businessProfile: null, today: '2026-09-23' });
+  assert.equal(draft.currency, 'KES');
+  assert.equal(draft.due_date, '');
+});
+
 test('hydrates persisted items in position order and preserves editable values', () => {
   const draft = hydrateDocumentDraft({ client_id: 'client-1', issue_date: '2026-09-20', currency: 'KES', tax_rate: '16', discount_type: 'NONE', discount_value: '0', notes: 'Paid', items: [{ id: 'b', position: 1, description: 'Second', quantity: 2, unit_price: '20' }, { id: 'a', position: 0, description: 'First', quantity: 1, unit_price: '10' }] }, 'invoice');
   assert.deepEqual(draft.items.map((item) => item.id), ['a', 'b']);
