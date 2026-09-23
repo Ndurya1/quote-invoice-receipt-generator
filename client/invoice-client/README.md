@@ -34,6 +34,7 @@ The API client owns JSON envelopes, backend errors, bearer-token attachment, acc
 - Responsive public navigation, landing sections and footer.
 - Illustrative invoice, with totals calculated from sample data. It is not an editable production form.
 - Registration and login are connected to the backend API, including client-side validation, duplicate-email and invalid-credential handling, safe protected-route redirects, onboarding detection, logout, and session-expiration recovery. Business onboarding uses a two-step draft flow and persists supported business-profile fields only after the defaults step is complete.
+- The authenticated dashboard is implemented at `/dashboard` with API-backed counts, overdue attention, creation actions, recent-document filtering, empty/loading/error states, and a responsive mobile document list.
 - Protected pages share a responsive application shell with desktop sidebar navigation, mobile bottom navigation, account controls, route-focus management, and parent-route active states.
 - No backend calls, payment processing, uploads or document generation are implemented by this page.
 
