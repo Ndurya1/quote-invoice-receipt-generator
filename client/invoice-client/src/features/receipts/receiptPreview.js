@@ -1,5 +1,6 @@
 import { getPreviewClient } from '../clients/clientPreview.js';
 import { calculateDocumentTotals } from '../documents/documentCalculations.js';
+import { listPreviewDocuments } from '../documents/documentListPreview.js';
 
 let nextPreviewNumber = 1;
 const previewStore = new Map();
@@ -56,6 +57,11 @@ function seed() {
 export function getPreviewReceipt(id) {
   seed();
   return clone(previewStore.get(id) || buildReceipt(id));
+}
+
+export function listPreviewReceipts(params) {
+  seed();
+  return listPreviewDocuments([...previewStore.values()], params, getPreviewClient, 'receipt_number');
 }
 
 export function createPreviewReceipt(payload) {

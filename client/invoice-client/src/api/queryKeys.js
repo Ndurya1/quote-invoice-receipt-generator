@@ -21,4 +21,5 @@ export const queryKeys = {
   invoiceDetail: (id) => `invoices:detail:${id}`,
   receiptsList: (params) => listKey('receipts', params),
   receiptDetail: (id) => `receipts:detail:${id}`,
+  documentsList: (type, params) => listKey(`documents:${type}`, params),
 };

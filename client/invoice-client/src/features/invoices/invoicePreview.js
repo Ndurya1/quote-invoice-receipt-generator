@@ -1,5 +1,6 @@
 import { getPreviewClient } from '../clients/clientPreview.js';
 import { calculateDocumentTotals } from '../documents/documentCalculations.js';
+import { listPreviewDocuments } from '../documents/documentListPreview.js';
 import { createPreviewReceiptFromInvoice } from '../receipts/receiptPreview.js';
 
 let nextPreviewNumber = 1;
@@ -54,6 +55,11 @@ function seed() {
 export function getPreviewInvoice(id) {
   seed();
   return clone(previewStore.get(id) || buildInvoice(id));
+}
+
+export function listPreviewInvoices(params) {
+  seed();
+  return listPreviewDocuments([...previewStore.values()], params, getPreviewClient, 'invoice_number');
 }
 
 export function createPreviewInvoice(payload) {
