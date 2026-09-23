@@ -13,6 +13,10 @@ import BusinessDetailsPage from '../pages/onboarding/BusinessDetailsPage.jsx';
 import DocumentDefaultsPage from '../pages/onboarding/DocumentDefaultsPage.jsx';
 import OnboardingCompletePage from '../pages/onboarding/OnboardingCompletePage.jsx';
 import DashboardPage from '../pages/DashboardPage.jsx';
+import ClientsPage from '../pages/ClientsPage.jsx';
+import ClientCreatePage from '../pages/ClientCreatePage.jsx';
+import ClientDetailPage from '../pages/ClientDetailPage.jsx';
+import ClientEditPage from '../pages/ClientEditPage.jsx';
 import RoutePlaceholderPage from '../pages/RoutePlaceholderPage';
 
 function Placeholder({ title, description }) {
@@ -54,10 +58,10 @@ export default function AppRoutes() {
         <Route path={routePaths.receiptsNew} element={<Placeholder title="Create receipt" description="Receipt creation is ready for its feature slice." />} />
         <Route path={routePaths.receiptDetail} element={<Placeholder title="Receipt detail" description="Receipt detail is ready for its feature slice." />} />
         <Route path={routePaths.receiptEdit} element={<Placeholder title="Edit receipt" description="Receipt editing is ready for its feature slice." />} />
-        <Route path={routePaths.clients} element={<Placeholder title="Clients" description="Client management is ready for its feature slice." />} />
-        <Route path={routePaths.clientNew} element={<Placeholder title="Create client" description="Client creation is ready for its feature slice." />} />
-        <Route path={routePaths.clientDetail} element={<Placeholder title="Client detail" description="Client detail is ready for its feature slice." />} />
-        <Route path={routePaths.clientEdit} element={<Placeholder title="Edit client" description="Client editing is ready for its feature slice." />} />
+        <Route path={routePaths.clients} element={<ClientsPage />} />
+        <Route path={routePaths.clientNew} element={<ClientCreatePage />} />
+        <Route path={routePaths.clientDetail} element={<ClientDetailPage />} />
+        <Route path={routePaths.clientEdit} element={<ClientEditPage />} />
         <Route path={routePaths.businessSettings} element={<Placeholder title="Business settings" description="Business settings are ready for their feature slice." />} />
         <Route path={routePaths.accountSettings} element={<Placeholder title="Account" description="Account settings are ready for their feature slice." />} />
         </Route>

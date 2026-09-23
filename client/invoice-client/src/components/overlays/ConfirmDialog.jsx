@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
-import Button from '../ui/Button';
+import Button from '../ui/Button.jsx';
 
-export default function ConfirmDialog({ title, description, confirmLabel = 'Confirm', open, onCancel, onConfirm, destructive = false }) {
+export default function ConfirmDialog({ title, description, children, confirmLabel = 'Confirm', cancelLabel = 'Cancel', open, onCancel, onConfirm, destructive = false, pending = false }) {
   const cancelRef = useRef(null);
   const dialogRef = useRef(null);
 
@@ -9,7 +9,7 @@ export default function ConfirmDialog({ title, description, confirmLabel = 'Conf
     if (!open) return undefined;
     cancelRef.current?.focus();
     function handleKeyDown(event) {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !pending) {
         onCancel();
         return;
       }
@@ -28,19 +28,19 @@ export default function ConfirmDialog({ title, description, confirmLabel = 'Conf
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onCancel, open]);
+  }, [onCancel, open, pending]);
 
   if (!open) return null;
   return (
-    <div className="dialog-backdrop" role="presentation">
-      <div ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" aria-describedby="dialog-description">
-        <h2 id="dialog-title">{title}</h2>
-        <p id="dialog-description">{description}</p>
+    <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !pending) onCancel(); }}>
+      <section ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-description">
+        <h2 id="confirm-dialog-title">{title}</h2>
+        <div id="confirm-dialog-description">{children || <p>{description}</p>}</div>
         <div className="dialog__actions">
-          <button ref={cancelRef} className="button button--secondary" type="button" onClick={onCancel}>Cancel</button>
-          <Button variant={destructive ? 'danger' : 'primary'} type="button" onClick={onConfirm}>{confirmLabel}</Button>
+          <button ref={cancelRef} className="button button--secondary" type="button" onClick={onCancel} disabled={pending}>{cancelLabel}</button>
+          <Button variant={destructive ? 'danger' : 'primary'} type="button" onClick={onConfirm} loading={pending} loadingLabel="Deleting…">{confirmLabel}</Button>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
