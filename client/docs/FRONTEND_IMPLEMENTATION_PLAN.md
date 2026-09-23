@@ -233,7 +233,7 @@ Exit: all ten release acceptance outcomes in `FRONTEND_DIRECTION.md` pass with e
 
 ## 17. Backend-dependent follow-up backlog
 
-These are not hidden frontend tasks. Each needs an API/database decision before UI work begins.
+These are not hidden frontend tasks. Each needs an API/database decision before UI work begins. The detailed hand-off contract, security requirements, endpoint proposals, acceptance criteria, and frontend entry conditions are maintained in [`BACKEND_FOLLOW_UP_CONTRACTS.md`](./BACKEND_FOLLOW_UP_CONTRACTS.md).
 
 | Backlog item | Required backend capability before frontend implementation |
 | --- | --- |
@@ -248,6 +248,15 @@ These are not hidden frontend tasks. Each needs an API/database decision before 
 | Account editing/password change | Authenticated update endpoints, re-authentication rules, token invalidation, and uniqueness handling |
 | Logout/revocation | Refresh-token storage/revocation or secure cookie session model |
 | Native email/WhatsApp share | Delivery provider, consent, addressing, templates, status/error tracking, and privacy rules |
+
+### Phase 15 — Follow-up contract package
+
+- [x] **FUP-01 — Define backend contracts.** Document schema, endpoint, ownership, lifecycle, security, and acceptance requirements for every deferred capability.
+- [x] **FUP-02 — Define frontend entry criteria.** Require migrations, API behavior, tenant-isolation tests, idempotency rules, historical-integrity rules, and developer fixtures before frontend implementation.
+- [x] **FUP-03 — Preserve unsupported-feature boundaries.** Keep deferred pages, actions, and navigation entries out of the production route map until their contracts are backend-ready.
+- [x] **FUP-04 — Link the hand-off documentation.** Make the follow-up contract visible from the frontend direction, implementation plan, and client README.
+
+Exit: backend and frontend contributors have one shared readiness checklist, and no deferred capability is represented as an incomplete or misleading frontend page.
 
 ## 18. Suggested merge sequence
 
@@ -264,5 +273,6 @@ Keep merges reviewable by grouping only tightly related tasks:
 9. Receipts.
 10. Unified documents and settings.
 11. Landing integration and release QA.
+12. Backend-dependent follow-up contract package.
 
 Do not begin a document-specific slice before the shared calculation/payload tests pass. Do not expose a lifecycle action before its visibility matrix and 409 recovery are tested.
