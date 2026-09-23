@@ -123,6 +123,10 @@ export function createApiClient({
       onSessionExpired?.(error);
       throw new SessionExpiredError(error);
     }
+    const contentType = finalResponse.headers.get('content-type') || '';
+    if (finalResponse.ok && !/^application\/pdf(?:\s*;|$)/i.test(contentType)) {
+      throw new ApiError({ status: finalResponse.status, code: 'INVALID_PDF_RESPONSE', message: 'The server returned an invalid PDF response.' });
+    }
     if (!finalResponse.ok) {
       await parseApiResponse(finalResponse);
     }
