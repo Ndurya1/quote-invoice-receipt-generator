@@ -425,6 +425,7 @@
 .quotation-canvas__logo { display: grid; place-items: center; justify-self: end; width: 132px; height: 112px; margin-top: -82px; background: var(--app-color-surface-soft); color: var(--app-color-accent); font-size: 34px; font-weight: 700; }
 .quotation-canvas__logo img { width: 100%; height: 100%; object-fit: contain; }
 .quotation-canvas__metadata, .quotation-canvas__parties { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; }
+.quotation-canvas__metadata--receipt { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .quotation-canvas__metadata h3, .quotation-canvas__contact h3, .quotation-canvas__totals dt { margin-bottom: 8px; color: var(--app-color-accent); font-size: 12px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
 .quotation-canvas__metadata span { color: var(--app-color-text); font-weight: 600; }
 .quotation-canvas__contact { display: grid; align-content: start; gap: 3px; min-width: 0; }

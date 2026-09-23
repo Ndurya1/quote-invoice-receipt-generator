@@ -26,6 +26,9 @@ import QuotationEditPage from '../pages/QuotationEditPage.jsx';
 import InvoiceCreatePage from '../pages/InvoiceCreatePage.jsx';
 import InvoiceDetailPage from '../pages/InvoiceDetailPage.jsx';
 import InvoiceEditPage from '../pages/InvoiceEditPage.jsx';
+import ReceiptCreatePage from '../pages/ReceiptCreatePage.jsx';
+import ReceiptDetailPage from '../pages/ReceiptDetailPage.jsx';
+import ReceiptEditPage from '../pages/ReceiptEditPage.jsx';
 
 function Placeholder({ title, description }) {
   return <RoutePlaceholderPage title={title} description={description} />;
@@ -34,6 +37,7 @@ function Placeholder({ title, description }) {
 function DocumentCreateRoute({ type, title }) {
   if (type === 'quotation') return <QuotationCreatePage />;
   if (type === 'invoice') return <InvoiceCreatePage />;
+  if (type === 'receipt') return <ReceiptCreatePage />;
   return isAuthPreviewEnabled ? <DocumentFoundationPreviewPage type={type} /> : <Placeholder title={title} description={`${title} is ready for its feature slice.`} />;
 }
 
@@ -70,8 +74,8 @@ export default function AppRoutes() {
         <Route path={routePaths.invoiceDetail} element={<InvoiceDetailPage />} />
         <Route path={routePaths.invoiceEdit} element={<InvoiceEditPage />} />
         <Route path={routePaths.receiptsNew} element={<DocumentCreateRoute type="receipt" title="Create receipt" />} />
-        <Route path={routePaths.receiptDetail} element={<Placeholder title="Receipt detail" description="Receipt detail is ready for its feature slice." />} />
-        <Route path={routePaths.receiptEdit} element={<Placeholder title="Edit receipt" description="Receipt editing is ready for its feature slice." />} />
+        <Route path={routePaths.receiptDetail} element={<ReceiptDetailPage />} />
+        <Route path={routePaths.receiptEdit} element={<ReceiptEditPage />} />
         <Route path={routePaths.clients} element={<ClientsPage />} />
         <Route path={routePaths.clientNew} element={<ClientCreatePage />} />
         <Route path={routePaths.clientDetail} element={<ClientDetailPage />} />

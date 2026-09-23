@@ -1,5 +1,6 @@
 import { getPreviewClient } from '../clients/clientPreview.js';
 import { calculateDocumentTotals } from '../documents/documentCalculations.js';
+import { createPreviewReceiptFromInvoice } from '../receipts/receiptPreview.js';
 
 let nextPreviewNumber = 1;
 const previewStore = new Map();
@@ -81,25 +82,7 @@ export function transitionPreviewInvoice(id, status) {
 
 export function convertPreviewInvoice(id, payload) {
   const invoice = getPreviewInvoice(id);
-  return {
-    id: `receipt-preview-${Date.now()}`,
-    user_id: invoice.user_id,
-    client_id: invoice.client_id,
-    receipt_number: `RCT-2026-${String(nextPreviewNumber++).padStart(4, '0')}`,
-    source_invoice_id: invoice.id,
-    issue_date: payload.issue_date,
-    currency: invoice.currency,
-    subtotal: invoice.subtotal,
-    tax_rate: invoice.tax_rate,
-    tax_amount: invoice.tax_amount,
-    discount_type: invoice.discount_type,
-    discount_value: invoice.discount_value,
-    discount_amount: invoice.discount_amount,
-    total: invoice.total,
-    status: null,
-    notes: invoice.notes,
-    items: invoice.items,
-  };
+  return createPreviewReceiptFromInvoice(invoice, payload);
 }
 
 export function getPreviewInvoiceClient(invoice) {
