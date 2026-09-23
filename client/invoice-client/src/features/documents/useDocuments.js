@@ -41,7 +41,7 @@ export function useDocuments(filters) {
     const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load(controller.signal);
-    return () => controller.abort();
+    return () => { requestId.current += 1; controller.abort(); };
   }, [load, user?.id]);
 
   return { ...state, config: documentListConfig(filters.type), retry: () => load(new AbortController().signal) };
