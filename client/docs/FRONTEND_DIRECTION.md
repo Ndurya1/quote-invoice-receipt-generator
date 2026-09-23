@@ -449,3 +449,21 @@ The MVP frontend is complete when a user can:
 10. complete the same core workflow at 360px, by keyboard, and at 200% text zoom.
 
 No route or visible control may imply an unsupported backend capability.
+
+The implementation hand-off for deferred capabilities is maintained in
+[`BACKEND_FOLLOW_UP_CONTRACTS.md`](./BACKEND_FOLLOW_UP_CONTRACTS.md). That document defines the database, API, security, and acceptance criteria required before a deferred feature can receive a production route or navigation item.
+
+## 16. Backend-dependent follow-up readiness
+
+The following capabilities remain intentionally outside the MVP frontend until their backend contracts are complete:
+
+- password recovery and reset;
+- persistent onboarding progress and completion;
+- business defaults, PDF branding, and logo storage;
+- products and services;
+- currency-grouped dashboard balances;
+- pre-save conversion review and document duplication;
+- account editing, password changes, and server-side logout revocation;
+- native email and WhatsApp delivery.
+
+The frontend may prepare fixtures and contract tests after backend readiness is demonstrated, but must not add dead routes, disabled navigation, or client-side-only persistence for these capabilities.

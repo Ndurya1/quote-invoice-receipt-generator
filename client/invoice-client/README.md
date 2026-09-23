@@ -17,6 +17,8 @@ On Windows PowerShell with script execution disabled, use `npm.cmd` instead of `
 
 The public landing page is `/`. Design requirements live in `../docs/LANDING_AUTH_ONBOARDING_DESIGN_SPEC.md`, with shared tokens in `../docs/DASHBOARD_DESIGN_SPEC.md`. The formal specification takes precedence over conflicting draft copy.
 
+Backend-dependent follow-up work is specified in [`../docs/BACKEND_FOLLOW_UP_CONTRACTS.md`](../docs/BACKEND_FOLLOW_UP_CONTRACTS.md). Do not add production routes or navigation for a deferred capability until that document's backend entry criteria are satisfied.
+
 ## API configuration
 
 The frontend talks to the backend through `/api/v1` by default. Set `VITE_API_BASE_URL` when the API is hosted at another origin:
@@ -44,6 +46,7 @@ The API client owns JSON envelopes, backend errors, bearer-token attachment, acc
 - Business settings are implemented at `/settings/business` with full-profile replacement that preserves unsupported fields, and the read-only account page is available at `/settings/account` with local logout.
 - The public landing page keeps anonymous acquisition links and sends authenticated users to the dashboard or unfinished onboarding setup.
 - Release QA coverage and the manual responsive/accessibility checklist are documented in `../docs/RELEASE_QA.md`.
+- Backend-dependent follow-up contracts and implementation readiness are documented in `../docs/BACKEND_FOLLOW_UP_CONTRACTS.md`.
 - Protected pages share a responsive application shell with desktop sidebar navigation, mobile bottom navigation, account controls, route-focus management, and parent-route active states.
 - No backend calls, payment processing, uploads or document generation are implemented by this page.
 
