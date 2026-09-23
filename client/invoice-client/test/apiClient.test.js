@@ -83,3 +83,14 @@ test('clears the session when refresh fails', async () => {
   assert.equal(store.getAccessToken(), null);
   assert.equal(store.getRefreshToken(), null);
 });
+
+test('rejects successful non-PDF responses from PDF endpoints', async () => {
+  const client = createApiClient({
+    baseUrl: '/api/v1',
+    fetchImpl: async () => new Response('<html>frontend shell</html>', { status: 200, headers: { 'Content-Type': 'text/html' } }),
+  });
+  await assert.rejects(
+    () => client.requestBlob('/quotes/quote-1/pdf'),
+    (error) => error instanceof ApiError && error.code === 'INVALID_PDF_RESPONSE',
+  );
+});

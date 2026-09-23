@@ -43,3 +43,10 @@ test('login stores the returned token pair', async () => {
   assert.deepEqual(tokens, { access_token: 'access', refresh_token: 'refresh' });
   assert.deepEqual(client.tokens, tokens);
 });
+
+test('document list adapters forward cancellation options', async () => {
+  const client = stubClient();
+  const signal = new AbortController().signal;
+  await listInvoices({ page: 1 }, client, { signal });
+  assert.equal(client.calls[0].options.signal, signal);
+});
