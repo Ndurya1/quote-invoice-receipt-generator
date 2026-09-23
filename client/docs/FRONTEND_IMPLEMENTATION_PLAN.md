@@ -216,18 +216,18 @@ Exit: public acquisition, setup, workspace, and settings form one continuous pro
 
 ## 16. Phase 14 — Integrated quality and release
 
-- [ ] **QA-01 — Add mocked end-to-end new-user journey.** Landing -> register -> login -> onboarding -> create client -> create quotation -> detail -> PDF.
-- [ ] **QA-02 — Add mocked full lifecycle journey.** Accept quotation -> convert invoice -> mark sent/paid -> create receipt -> inspect all linked details.
-- [ ] **QA-03 — Add direct-document journeys.** Create/edit/delete eligible direct invoice and receipt; verify immutable converted resources.
-- [ ] **QA-04 — Add session resilience journey.** Refresh access token during an in-flight protected request, then verify expiry redirects and clears cached owner data.
-- [ ] **QA-05 — Add conflict/not-found journey.** Exercise 404 tenant-safe handling, 409 stale lifecycle state, client-in-use deletion, and retryable 5xx.
+- [x] **QA-01 — Add mocked end-to-end new-user journey.** Landing -> register -> login -> onboarding -> create client -> create quotation -> detail -> PDF.
+- [x] **QA-02 — Add mocked full lifecycle journey.** Accept quotation -> convert invoice -> mark sent/paid -> create receipt -> inspect all linked details.
+- [x] **QA-03 — Add direct-document journeys.** Create/edit/delete eligible direct invoice and receipt; verify immutable converted resources.
+- [x] **QA-04 — Add session resilience journey.** Refresh access token during an in-flight protected request, then verify expiry redirects and clears cached owner data.
+- [x] **QA-05 — Add conflict/not-found journey.** Exercise 404 tenant-safe handling, 409 stale lifecycle state, client-in-use deletion, and retryable 5xx.
 - [ ] **QA-06 — Perform responsive browser QA.** Verify key pages at 1440px, 1024px, 768px, 390px, and 360px with no horizontal page scroll.
 - [ ] **QA-07 — Perform keyboard and screen-reader QA.** Verify landmarks, headings, labels, errors, menus, dialogs, line items, route focus, and live announcements.
 - [ ] **QA-08 — Perform 200% zoom and text stress QA.** Use long names, emails, document numbers, amounts, and translated-length copy approximations.
-- [ ] **QA-09 — Verify financial display parity.** Compare frontend previews against backend responses for tax/discount/rounding fixtures and always display persisted totals after save.
+- [x] **QA-09 — Verify financial display parity.** Compare frontend previews against backend responses for tax/discount/rounding fixtures and always display persisted totals after save.
 - [ ] **QA-10 — Verify security behavior.** Confirm no tokens in URLs/logs/DOM, no external `next` redirect, safe PDF filenames, cleared caches on logout, and production CSP documentation.
 - [ ] **QA-11 — Run production checks.** Execute lint, tests, coverage, and build from a clean dependency install; resolve warnings that indicate real runtime or accessibility risk.
-- [ ] **QA-12 — Update delivery documentation.** Record completed routes, environment setup, validation commands, known limitations, and deferred backend-dependent work.
+- [x] **QA-12 — Update delivery documentation.** Record completed routes, environment setup, validation commands, known limitations, and deferred backend-dependent work.
 
 Exit: all ten release acceptance outcomes in `FRONTEND_DIRECTION.md` pass with evidence.
 
