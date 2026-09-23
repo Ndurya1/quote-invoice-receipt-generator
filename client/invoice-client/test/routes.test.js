@@ -4,6 +4,8 @@ import { isSafeInternalPath, routePaths } from '../src/utils/routePaths.js';
 
 test('defines the public and protected route map', () => {
   assert.equal(routePaths.home, '/');
+  assert.equal(routePaths.privacy, '/privacy');
+  assert.equal(routePaths.terms, '/terms');
   assert.equal(routePaths.register, '/register');
   assert.equal(routePaths.dashboard, '/dashboard');
   assert.equal(routePaths.documents, '/documents');

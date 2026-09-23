@@ -32,6 +32,8 @@ import ReceiptEditPage from '../pages/ReceiptEditPage.jsx';
 import DocumentsPage from '../pages/DocumentsPage.jsx';
 import BusinessSettingsPage from '../pages/settings/BusinessSettingsPage.jsx';
 import AccountSettingsPage from '../pages/settings/AccountSettingsPage.jsx';
+import PrivacyPolicyPage from '../pages/legal/PrivacyPolicyPage.jsx';
+import TermsOfServicePage from '../pages/legal/TermsOfServicePage.jsx';
 
 function Placeholder({ title, description }) {
   return <RoutePlaceholderPage title={title} description={description} />;
@@ -49,6 +51,8 @@ export default function AppRoutes() {
     <Routes>
       <Route element={<PublicLayout />}>
         <Route path={routePaths.home} element={<LandingPage />} />
+        <Route path={routePaths.privacy} element={<PrivacyPolicyPage />} />
+        <Route path={routePaths.terms} element={<TermsOfServicePage />} />
       </Route>
 
       <Route element={<PublicOnlyRoute />}>

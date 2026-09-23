@@ -1,5 +1,7 @@
 export const routePaths = {
   home: '/',
+  privacy: '/privacy',
+  terms: '/terms',
   register: '/register',
   login: '/login',
   onboardingBusiness: '/onboarding/business',
