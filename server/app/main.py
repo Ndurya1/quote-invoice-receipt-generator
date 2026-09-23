@@ -26,6 +26,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["Authorization", "Content-Type"],
+        expose_headers=["Content-Disposition"],
     )
     if settings.allowed_hosts:
         application.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.allowed_hosts))

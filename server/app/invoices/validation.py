@@ -14,7 +14,7 @@ def validate_invoice_create(
     connection: Connection, *, user_id: UUID, payload: InvoiceCreate,
 ) -> DocumentTotals:
     """Use an authenticated owner ID and parsed request; allocate or persist nothing."""
-    client = get_client_for_user(connection, user_id=user_id, client_id=payload.client_id)
+    client = get_client_for_user(connection, user_id=user_id, client_id=payload.client_id, for_update=True)
     if client is None:
         raise DomainError('CLIENT_NOT_FOUND', 'Client not found.', status_code=404)
     return calculate_document_totals(
