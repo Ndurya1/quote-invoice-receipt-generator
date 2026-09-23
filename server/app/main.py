@@ -6,6 +6,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from app.api.v1 import router
 from app.common.errors import register_exception_handlers
 from app.common.logging_config import configure_logging
+from app.common.rate_limit import RateLimitSettings, RateLimiter
 from app.common.settings import Settings
 
 
@@ -33,6 +34,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if settings.force_https:
         application.add_middleware(HTTPSRedirectMiddleware)
     application.state.settings = settings
+    application.state.rate_limiter = RateLimiter(RateLimitSettings(
+        window_seconds=settings.rate_limit_window_seconds,
+        auth_limit=settings.auth_rate_limit_per_window,
+        refresh_limit=settings.refresh_rate_limit_per_window,
+        pdf_limit=settings.pdf_rate_limit_per_window,
+        max_keys=settings.rate_limit_max_keys,
+    ))
     register_exception_handlers(application)
     application.include_router(router)
 

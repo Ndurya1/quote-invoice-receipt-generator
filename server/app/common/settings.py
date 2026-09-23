@@ -15,6 +15,11 @@ class Settings:
     )
     allowed_hosts: tuple[str, ...] = ()
     force_https: bool = False
+    rate_limit_window_seconds: int = 60
+    auth_rate_limit_per_window: int = 10
+    refresh_rate_limit_per_window: int = 60
+    pdf_rate_limit_per_window: int = 30
+    rate_limit_max_keys: int = 10_000
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -38,6 +43,13 @@ class Settings:
         force_https = os.getenv("APP_FORCE_HTTPS", "true" if environment == "production" else "false").strip().lower()
         if force_https not in {"true", "false"}:
             raise ValueError("APP_FORCE_HTTPS must be true or false")
+        rate_limit_values = {
+            "rate_limit_window_seconds": _positive_int_env("RATE_LIMIT_WINDOW_SECONDS", 60),
+            "auth_rate_limit_per_window": _positive_int_env("AUTH_RATE_LIMIT_PER_WINDOW", 10),
+            "refresh_rate_limit_per_window": _positive_int_env("REFRESH_RATE_LIMIT_PER_WINDOW", 60),
+            "pdf_rate_limit_per_window": _positive_int_env("PDF_RATE_LIMIT_PER_WINDOW", 30),
+            "rate_limit_max_keys": _positive_int_env("RATE_LIMIT_MAX_KEYS", 10_000),
+        }
         if environment == "production":
             if debug == "true":
                 raise ValueError("APP_DEBUG must be false in production")
@@ -52,6 +64,7 @@ class Settings:
             cors_origins=origins,
             allowed_hosts=hosts,
             force_https=force_https == "true",
+            **rate_limit_values,
         )
 
     def validate_for_production(self) -> None:
@@ -66,3 +79,14 @@ class Settings:
         from app.accounts.tokens import TokenSettings
 
         TokenSettings.from_environment()
+
+
+def _positive_int_env(name: str, default: int) -> int:
+    value = os.getenv(name, str(default)).strip()
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a positive integer") from exc
+    if parsed <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+    return parsed
