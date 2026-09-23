@@ -12,6 +12,7 @@ import RegisterPage from '../pages/auth/RegisterPage.jsx';
 import BusinessDetailsPage from '../pages/onboarding/BusinessDetailsPage.jsx';
 import DocumentDefaultsPage from '../pages/onboarding/DocumentDefaultsPage.jsx';
 import OnboardingCompletePage from '../pages/onboarding/OnboardingCompletePage.jsx';
+import DashboardPage from '../pages/DashboardPage.jsx';
 import RoutePlaceholderPage from '../pages/RoutePlaceholderPage';
 
 function Placeholder({ title, description }) {
@@ -42,7 +43,7 @@ export default function AppRoutes() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-        <Route path={routePaths.dashboard} element={<Placeholder title="Dashboard" description="The authenticated dashboard is the next implementation slice." />} />
+        <Route path={routePaths.dashboard} element={<DashboardPage />} />
         <Route path={routePaths.documents} element={<Placeholder title="Documents" description="The unified documents workspace is ready for its feature slice." />} />
         <Route path={routePaths.quotationsNew} element={<Placeholder title="Create quotation" description="Quotation creation is ready for its feature slice." />} />
         <Route path={routePaths.quotationDetail} element={<Placeholder title="Quotation detail" description="Quotation detail is ready for its feature slice." />} />

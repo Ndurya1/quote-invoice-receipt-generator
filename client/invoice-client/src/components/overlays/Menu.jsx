@@ -21,7 +21,7 @@ export default function Menu({ label, open, onToggle, children }) {
 
   return (
     <div className="menu" ref={menuRef}>
-      <button className="button button--secondary" type="button" aria-expanded={open} onClick={() => onToggle(!open)}>{label}</button>
+      <button className="button button--secondary" type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => onToggle(!open)}>{label}</button>
       {open && <div className="menu__content" role="menu">{children}</div>}
     </div>
   );
