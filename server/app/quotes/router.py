@@ -12,6 +12,7 @@ from app.accounts.models import User
 from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
+from app.common.rate_limit import rate_limit
 from app.pdf.context import build_quote_context
 from app.pdf.quote import render_quote_pdf
 from app.conversions.quote_invoice import convert_quote_to_invoice
@@ -24,7 +25,7 @@ from app.quotes.service import create_quote, delete_quote, transition_quote, upd
 router = APIRouter(prefix='/quotes', tags=['quotes'])
 
 
-@router.get('/{quote_id}/pdf', response_class=Response, responses={200: {'content': {'application/pdf': {}}}})
+@router.get('/{quote_id}/pdf', response_class=Response, responses={200: {'content': {'application/pdf': {}}}}, dependencies=[Depends(rate_limit("pdf"))])
 def quote_pdf(
     quote_id: UUID,
     user: Annotated[User, Depends(get_current_user)],

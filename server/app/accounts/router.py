@@ -16,6 +16,7 @@ from app.accounts.service import authenticate_user, create_user, refresh_access_
 from app.accounts.tokens import TokenSettings, get_token_settings, issue_token_pair
 from app.common.dependencies import get_database_connection
 from app.common.responses import resource_response
+from app.common.rate_limit import rate_limit
 
 router = APIRouter(prefix="/auth", tags=["accounts"])
 
@@ -27,7 +28,7 @@ def current_user(user: Annotated[User, Depends(get_current_user)]) -> JSONRespon
     return response
 
 
-@router.post("/register", status_code=201, response_model=RegistrationResponse)
+@router.post("/register", status_code=201, response_model=RegistrationResponse, dependencies=[Depends(rate_limit("auth"))])
 def register(
     payload: UserCreate,
     connection: Annotated[Connection, Depends(get_database_connection)],
@@ -40,7 +41,7 @@ def register(
     return resource_response(UserResponse.model_validate(user), status_code=201)
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login", response_model=LoginResponse, dependencies=[Depends(rate_limit("auth"))])
 def login(
     payload: LoginRequest,
     connection: Annotated[Connection, Depends(get_database_connection)],
@@ -53,7 +54,7 @@ def login(
     return response
 
 
-@router.post("/refresh", response_model=RefreshResponse)
+@router.post("/refresh", response_model=RefreshResponse, dependencies=[Depends(rate_limit("refresh"))])
 def refresh(
     payload: RefreshRequest,
     connection: Annotated[Connection, Depends(get_database_connection)],

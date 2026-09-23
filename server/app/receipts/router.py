@@ -10,6 +10,7 @@ from app.accounts.models import User
 from app.common.dependencies import get_database_connection
 from app.common.errors import DomainError
 from app.common.responses import collection_response, resource_response
+from app.common.rate_limit import rate_limit
 from app.pdf.context import build_receipt_context
 from app.pdf.receipt import render_receipt_pdf
 from app.receipts.queries import get_receipt_for_user, paginate_receipts_for_user
@@ -19,7 +20,7 @@ from app.receipts.service import create_receipt, delete_receipt, update_receipt
 router = APIRouter(prefix='/receipts', tags=['receipts'])
 
 
-@router.get('/{receipt_id}/pdf', response_class=Response, responses={200: {'content': {'application/pdf': {}}}})
+@router.get('/{receipt_id}/pdf', response_class=Response, responses={200: {'content': {'application/pdf': {}}}}, dependencies=[Depends(rate_limit("pdf"))])
 def receipt_pdf(
     receipt_id: UUID,
     user: Annotated[User, Depends(get_current_user)],
