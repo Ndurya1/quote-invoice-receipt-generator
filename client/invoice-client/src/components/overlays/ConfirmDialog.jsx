@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import Button from '../ui/Button.jsx';
 
-export default function ConfirmDialog({ title, description, children, confirmLabel = 'Confirm', cancelLabel = 'Cancel', open, onCancel, onConfirm, destructive = false, pending = false }) {
+export default function ConfirmDialog({ title, description, children, confirmLabel = 'Confirm', cancelLabel = 'Cancel', open, onCancel, onConfirm, destructive = false, pending = false, loadingLabel = 'Deleting…' }) {
   const cancelRef = useRef(null);
   const dialogRef = useRef(null);
 
@@ -38,7 +38,7 @@ export default function ConfirmDialog({ title, description, children, confirmLab
         <div id="confirm-dialog-description">{children || <p>{description}</p>}</div>
         <div className="dialog__actions">
           <button ref={cancelRef} className="button button--secondary" type="button" onClick={onCancel} disabled={pending}>{cancelLabel}</button>
-          <Button variant={destructive ? 'danger' : 'primary'} type="button" onClick={onConfirm} loading={pending} loadingLabel="Deleting…">{confirmLabel}</Button>
+          <Button variant={destructive ? 'danger' : 'primary'} type="button" onClick={onConfirm} loading={pending} loadingLabel={loadingLabel}>{confirmLabel}</Button>
         </div>
       </section>
     </div>

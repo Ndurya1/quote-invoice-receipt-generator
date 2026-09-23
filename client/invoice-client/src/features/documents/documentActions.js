@@ -12,7 +12,7 @@ export function documentStatusLabel(status, type) {
 
 export function allowedDocumentActions({ type, status = 'DRAFT', sourceQuoteId = null, sourceInvoiceId = null } = {}) {
   if (type === 'quotation') {
-    if (status === 'DRAFT') return ['edit', 'delete', 'markSent'];
+    if (status === 'DRAFT') return ['edit', 'delete', 'markSent', 'accept'];
     if (status === 'SENT') return ['accept', 'reject'];
     if (status === 'ACCEPTED') return ['convertInvoice'];
     return [];
