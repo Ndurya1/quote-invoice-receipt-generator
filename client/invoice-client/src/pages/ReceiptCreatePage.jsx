@@ -30,6 +30,7 @@ export default function ReceiptCreatePage() {
     try {
       const receipt = isAuthPreviewEnabled ? createPreviewReceipt(payload) : await createReceipt(payload);
       cache.removeByPrefix('receipts:list:');
+      cache.removeByPrefix('documents:receipts:list:');
       cache.remove('dashboard:summary');
       navigate(receiptPath(receipt.id), { replace: true, state: { message: 'Receipt saved successfully.' } });
     } catch (error) {

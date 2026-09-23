@@ -30,6 +30,7 @@ export default function QuotationCreatePage() {
     try {
       const quotation = isAuthPreviewEnabled ? createPreviewQuotation(payload) : await createQuotation(payload);
       cache.removeByPrefix('quotations:list:');
+      cache.removeByPrefix('documents:quotations:list:');
       cache.remove('dashboard:summary');
       navigate(quotationPath(quotation.id), { replace: true, state: { message: 'Quotation saved successfully.' } });
     } catch (error) {

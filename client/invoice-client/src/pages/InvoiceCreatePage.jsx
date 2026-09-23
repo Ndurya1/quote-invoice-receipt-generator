@@ -30,6 +30,7 @@ export default function InvoiceCreatePage() {
     try {
       const invoice = isAuthPreviewEnabled ? createPreviewInvoice(payload) : await createInvoice(payload);
       cache.removeByPrefix('invoices:list:');
+      cache.removeByPrefix('documents:invoices:list:');
       cache.remove('dashboard:summary');
       navigate(invoicePath(invoice.id), { replace: true, state: { message: 'Invoice saved successfully.' } });
     } catch (error) {

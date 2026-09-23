@@ -51,6 +51,7 @@ function QuotationEditLoaded({ quotation }) {
       const updated = isAuthPreviewEnabled ? updatePreviewQuotation(quotation.id, payload) : await updateQuotation(quotation.id, payload);
       cache.remove(`quotations:detail:${quotation.id}`);
       cache.removeByPrefix('quotations:list:');
+      cache.removeByPrefix('documents:quotations:list:');
       navigate(quotationPath(updated.id), { replace: true, state: { message: 'Quotation updated successfully.' } });
     } catch (error) {
       if (error.status === 409) {

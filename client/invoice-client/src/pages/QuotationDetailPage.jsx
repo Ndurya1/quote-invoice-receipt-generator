@@ -39,6 +39,8 @@ function QuotationDetailLoaded({ quotation, retry }) {
   function invalidate() {
     cache.remove(`quotations:detail:${quotation.id}`);
     cache.removeByPrefix('quotations:list:');
+    cache.removeByPrefix('documents:quotations:list:');
+    cache.removeByPrefix('documents:invoices:list:');
     cache.remove('dashboard:summary');
   }
 
