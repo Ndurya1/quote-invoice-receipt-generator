@@ -20,13 +20,11 @@ export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [businessProfile, setBusinessProfile] = useState(null);
   const [sessionMessage, setSessionMessage] = useState('');
-  const [previewComplete, setPreviewComplete] = useState(false);
 
   const clearLocalSession = useCallback(() => {
     apiClient.sessionStore.clear();
     cache.clear();
     clearOnboardingDraft();
-    setPreviewComplete(false);
     setUser(null);
     setBusinessProfile(null);
     setStatus(authStatuses.anonymous);
@@ -34,14 +32,14 @@ export default function AuthProvider({ children }) {
 
   const bootstrap = useCallback(async () => {
     if (isAuthPreviewEnabled) {
-      const profile = previewComplete ? previewBusinessProfile({
+      const profile = previewBusinessProfile({
         business_name: 'Developer Preview Business',
         email: previewUser.email,
         phone: null,
         address: null,
         tax_number: null,
         default_currency: 'KES',
-      }) : null;
+      });
       const previewStatus = resolveAuthStatus({ hasAccessToken: true, user: previewUser, businessProfile: profile });
       setUser(previewUser);
       setBusinessProfile(profile);
@@ -80,7 +78,7 @@ export default function AuthProvider({ children }) {
       clearLocalSession();
       throw error;
     }
-  }, [clearLocalSession, previewComplete]);
+  }, [clearLocalSession]);
 
   useEffect(() => {
     let active = true;
@@ -118,7 +116,6 @@ export default function AuthProvider({ children }) {
   const completeOnboarding = useCallback(async (payload) => {
     if (isAuthPreviewEnabled) {
       const profile = previewBusinessProfile(payload);
-      setPreviewComplete(true);
       setUser(previewUser);
       setBusinessProfile(profile);
       setStatus(authStatuses.ready);

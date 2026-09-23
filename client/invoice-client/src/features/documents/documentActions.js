@@ -18,9 +18,10 @@ export function allowedDocumentActions({ type, status = 'DRAFT', sourceQuoteId =
     return [];
   }
   if (type === 'invoice') {
-    if (sourceQuoteId) return status === 'SENT' || status === 'OVERDUE' ? ['markPaid', 'cancel', 'convertReceipt'] : [];
-    if (status === 'DRAFT') return ['edit', 'delete', 'markSent'];
+    if (status === 'DRAFT' && sourceQuoteId) return ['markSent', 'cancel', 'convertReceipt'];
+    if (status === 'DRAFT') return ['edit', 'delete', 'markSent', 'cancel', 'convertReceipt'];
     if (status === 'SENT' || status === 'OVERDUE') return ['markPaid', 'cancel', 'convertReceipt'];
+    if (status === 'PAID') return ['convertReceipt'];
     return [];
   }
   if (type === 'receipt') return sourceInvoiceId ? [] : ['edit', 'delete'];

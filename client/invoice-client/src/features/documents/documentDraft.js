@@ -21,13 +21,14 @@ export function createLineItem() {
 
 export function createDocumentDraft({ type = 'quotation', businessProfile = {}, today = new Date().toISOString().slice(0, 10) } = {}) {
   const config = documentConfig(type);
+  const profile = businessProfile || {};
   return {
     type,
     client_id: '',
     issue_date: today,
     expiry_date: config.dateField === 'expiry_date' ? '' : undefined,
     due_date: config.dateField === 'due_date' ? '' : undefined,
-    currency: businessProfile.default_currency || 'KES',
+    currency: profile.default_currency || 'KES',
     tax_rate: '0.000',
     discount_type: 'NONE',
     discount_value: '0.00',
