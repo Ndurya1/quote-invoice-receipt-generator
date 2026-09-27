@@ -68,7 +68,7 @@ def _header(context: DocumentRenderContext, styles):
     return table
 
 
-def _metadata(context: DocumentRenderContext, styles):
+def _legacy_metadata(context: DocumentRenderContext, styles):
     date_label = 'Expiry date' if context.document_type == 'quote' else 'Due date'
     rows = [
         [_paragraph('Client', styles['SmallText']), _paragraph('Issue date', styles['SmallText']),
@@ -78,6 +78,34 @@ def _metadata(context: DocumentRenderContext, styles):
          _paragraph(context.status or 'Issued', styles['BodyText'])],
     ]
     table = Table(rows, colWidths=[75 * mm, 35 * mm, 35 * mm, 35 * mm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#F3F6F9')),
+        ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#D5DDE5')),
+        ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#D5DDE5')),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 7),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 7),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    return table
+
+
+def _metadata(context: DocumentRenderContext, styles):
+    columns = [
+        ('Client', context.client.name),
+        ('Issue date', context.issue_date),
+    ]
+    if context.document_type == 'quote':
+        columns.append(('Expiry date', context.secondary_date or '—'))
+    elif context.document_type == 'invoice':
+        columns.append(('Due date', context.secondary_date or '—'))
+    rows = [
+        [_paragraph(label, styles['SmallText']) for label, _ in columns],
+        [_paragraph(value, styles['BodyText']) for _, value in columns],
+    ]
+    col_widths = [100 * mm, 40 * mm, 40 * mm] if len(columns) == 3 else [135 * mm, 45 * mm]
+    table = Table(rows, colWidths=col_widths)
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#F3F6F9')),
         ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#D5DDE5')),
