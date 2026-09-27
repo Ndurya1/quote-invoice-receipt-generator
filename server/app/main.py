@@ -18,7 +18,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title=settings.app_name,
         version="1.0.0",
         description="generate quotes, invoices and receipts all in one place",
-        # Framework debug responses expose tracebacks and bypass our 500 handler.
         debug=False,
     )
     application.add_middleware(

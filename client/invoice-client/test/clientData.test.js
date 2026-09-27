@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  assignClientToDocumentDraft,
   clientDocumentsPath,
   clientEditPath,
   clientListSearchParams,
@@ -10,6 +11,14 @@ import {
   serializeClientPatch,
   validateClientValues,
 } from '../src/features/clients/clientData.js';
+
+test('assigns a newly created client to a returned document draft', () => {
+  const draft = { type: 'quotation', client_id: '', items: [] };
+  const client = { id: 'client-42', name: 'Acme' };
+  assert.deepEqual(assignClientToDocumentDraft(draft, client), { ...draft, client_id: 'client-42' });
+  assert.deepEqual(draft, { type: 'quotation', client_id: '', items: [] });
+  assert.equal(assignClientToDocumentDraft(draft, null), draft);
+});
 
 test('reads safe URL-backed client list filters', () => {
   const query = readClientListQuery(new URLSearchParams('page=3&page_size=50&search= Acme &sort=name'));

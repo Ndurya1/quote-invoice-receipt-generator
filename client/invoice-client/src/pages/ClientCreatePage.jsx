@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { createClient } from '../api/clientsApi.js';
 import { isAuthPreviewEnabled } from '../auth/authPreview.js';
 import { useDataCache } from '../app/useDataCache.js';
-import { clientDetailPath, clientFieldErrors, clientErrorMessage, clientFormValues, serializeClientCreate } from '../features/clients/clientData.js';
+import { assignClientToDocumentDraft, clientDetailPath, clientFieldErrors, clientErrorMessage, clientFormValues, serializeClientCreate } from '../features/clients/clientData.js';
 import { createPreviewClient } from '../features/clients/clientPreview.js';
 import ClientForm from '../features/clients/components/ClientForm.jsx';
 
@@ -22,7 +22,7 @@ export default function ClientCreatePage() {
       cache.removeByPrefix('clients:list:');
       const returnTo = location.state?.returnTo;
       if (typeof returnTo === 'string' && returnTo.startsWith('/documents/') && returnTo.endsWith('/new')) {
-        navigate(returnTo, { replace: true, state: { draft: location.state.draft, client, clientAdded: true } });
+        navigate(returnTo, { replace: true, state: { draft: assignClientToDocumentDraft(location.state.draft, client), client, clientAdded: true } });
       } else {
         navigate(`${clientDetailPath(client.id)}?created=1`);
       }

@@ -76,6 +76,11 @@ export function clientEditPath(clientId) {
   return `${clientDetailPath(clientId)}/edit`;
 }
 
+export function assignClientToDocumentDraft(draft, client) {
+  if (!draft || !client?.id) return draft;
+  return { ...draft, client_id: client.id };
+}
+
 export function clientDocumentsPath(type, clientId) {
   return `/documents?type=${encodeURIComponent(type)}&client_id=${encodeURIComponent(clientId)}`;
 }
