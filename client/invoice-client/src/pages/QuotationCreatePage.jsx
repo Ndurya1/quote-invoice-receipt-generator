@@ -46,7 +46,12 @@ export default function QuotationCreatePage() {
   }
 
   return <section className="document-page" aria-labelledby="quotation-create-title">
-    <header className="page-header"><div><h1 id="quotation-create-title">New quotation</h1><p className="page-header__description">Prepare a clear proposal with live totals before saving it.</p></div></header>
+    <header className="page-header">
+      <div>
+        <h1 id="quotation-create-title">New quotation</h1>
+      <p className="page-header__description">Prepare a clear proposal with live totals before saving it.</p>
+      </div>
+    </header>
     <DocumentEditor draft={draft} client={client} onChange={setDraft} onClientChange={handleClientChange} onSubmit={submit} onAddClient={() => navigate(routePaths.clientNew, { state: { returnTo: location.pathname, draft } })} submitting={state.pending} message={state.message} error={state.error} />
   </section>;
 }
