@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /documents
+Disallow: /clients
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://docuflow1.netlify.app/sitemap.xml
